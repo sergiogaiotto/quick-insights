@@ -197,9 +197,9 @@ async def analytics_page(data: dict):
 
 @router.post("/analytics/predict")
 async def analytics_predict(req: PredictionRequest):
-    """Run predictive model (linear or logistic regression)."""
+    """Run predictive model (linear, logistic, or clustering)."""
     try:
-        result = run_prediction(req.query_data, req.target, req.features, req.model_type)
+        result = run_prediction(req.query_data, req.target, req.features, req.model_type, n_clusters=req.n_clusters)
         return result
     except Exception as e:
         return {"error": str(e)}
