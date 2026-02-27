@@ -173,6 +173,10 @@ Para consultas complexas, o agente usa planejamento automático:
 
 ---
 
+Nota: o botão "Análise Avançada está em beta"
+
+---
+
 ## Licença
 
 Apache 2.0
