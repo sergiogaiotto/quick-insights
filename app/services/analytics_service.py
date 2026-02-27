@@ -164,14 +164,14 @@ def _compute_ks(y_true, y_prob_positive):
 # Predictive Analysis
 # ---------------------------------------------------------------------------
 
-def run_prediction(data: dict, target: str, features: list[str], model_type: str) -> dict:
+def run_prediction(data: dict, target: str, features: list[str], model_type: str, n_clusters: int = 0) -> dict:
     df = _data_to_df(data)
     if df is None:
         return {"error": "Sem dados"}
 
     # --- Clustering (no target needed) ---
     if model_type == "clustering":
-        return _run_clustering(df, features)
+        return _run_clustering(df, features, n_clusters=n_clusters)
 
     if target not in df.columns:
         return {"error": f"Coluna alvo '{target}' não encontrada"}
@@ -194,10 +194,17 @@ def run_prediction(data: dict, target: str, features: list[str], model_type: str
 
     y = work[target].copy()
 
+    # Label-encode categorical target
+    target_encoded = False
+    if not pd.api.types.is_numeric_dtype(y):
+        le_y = LabelEncoder()
+        y = pd.Series(le_y.fit_transform(y.astype(str)), index=y.index)
+        target_encoded = True
+
     if model_type == "logistic":
         return _run_logistic(X, y, features, target, work)
     else:
-        return _run_linear(X, y, features, target, work)
+        return _run_linear(X, y, features, target, work, target_encoded=target_encoded)
 
 
 def _classification_metrics(y_true, y_pred, y_prob=None):
@@ -229,10 +236,7 @@ def _classification_metrics(y_true, y_pred, y_prob=None):
     return metrics
 
 
-def _run_linear(X, y, features, target, work):
-    if not pd.api.types.is_numeric_dtype(y):
-        return {"error": "Regressão linear requer coluna alvo numérica"}
-
+def _run_linear(X, y, features, target, work, target_encoded=False):
     test_size = 0.2 if len(work) >= 50 else 0.3
     X_train, X_test, y_train, y_test = train_test_split(
         X.values, y.values, test_size=test_size, random_state=42,
@@ -296,8 +300,7 @@ def _run_logistic(X, y, features, target, work):
     # Use lbfgs for multiclass (handles many classes better)
     try:
         model = LogisticRegression(
-            max_iter=5000, random_state=42,
-            solver="lbfgs", multi_class="multinomial" if n_classes > 2 else "auto",
+            max_iter=5000, random_state=42, solver="lbfgs",
         )
         model.fit(X_train, y_train)
     except Exception:
@@ -307,8 +310,7 @@ def _run_logistic(X, y, features, target, work):
             X_train_s = scaler.fit_transform(X_train)
             X_test_s = scaler.transform(X_test)
             model = LogisticRegression(
-                max_iter=5000, random_state=42,
-                solver="saga", multi_class="multinomial" if n_classes > 2 else "auto",
+                max_iter=5000, random_state=42, solver="saga",
             )
             model.fit(X_train_s, y_train)
             X_test = X_test_s
@@ -351,7 +353,7 @@ def _run_logistic(X, y, features, target, work):
     }
 
 
-def _run_clustering(df, features):
+def _run_clustering(df, features, n_clusters: int = 0):
     valid_features = [f for f in features if f in df.columns]
     if len(valid_features) < 2:
         return {"error": "Clusterização requer pelo menos 2 features"}
@@ -370,8 +372,8 @@ def _run_clustering(df, features):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X.values)
 
-    # Find optimal k via elbow (2-8)
-    max_k = min(8, len(X) // 3)
+    # Evaluate k range (2-10)
+    max_k = min(10, len(X) // 3)
     if max_k < 2:
         max_k = 2
     inertias = []
@@ -383,14 +385,46 @@ def _run_clustering(df, features):
         sil = silhouette_score(X_scaled, labels) if len(set(labels)) > 1 else 0
         silhouettes.append({"k": k, "silhouette": _safe(sil)})
 
-    # Best k = highest silhouette
-    best_k = max(silhouettes, key=lambda s: s["silhouette"] or 0)["k"]
+    # Determine best k
+    auto_k = True
+    if n_clusters and n_clusters >= 2:
+        best_k = min(n_clusters, max_k)
+        auto_k = False
+    else:
+        best_k = max(silhouettes, key=lambda s: s["silhouette"] or 0)["k"]
+
+    # Build rationale
+    if auto_k:
+        best_sil = next(s for s in silhouettes if s["k"] == best_k)
+        rationale = (
+            f"K={best_k} selecionado automaticamente. "
+            f"Critério: maior Silhouette Score ({best_sil['silhouette']:.4f}). "
+        )
+        # Detect elbow (largest drop in inertia)
+        if len(inertias) >= 3:
+            drops = []
+            for i in range(1, len(inertias)):
+                prev = inertias[i - 1]["inertia"]
+                curr = inertias[i]["inertia"]
+                drop_pct = (prev - curr) / prev * 100 if prev > 0 else 0
+                drops.append({"k": inertias[i]["k"], "drop_pct": round(drop_pct, 1)})
+            # Elbow = where drop % decreases most sharply
+            max_drop_k = max(drops, key=lambda d: d["drop_pct"])["k"]
+            rationale += (
+                f"Pelo método do cotovelo, a maior queda percentual de inertia ocorre em K={max_drop_k}. "
+                f"A partir desse ponto, acrescentar clusters gera ganho marginal decrescente."
+            )
+        else:
+            rationale += "Dados insuficientes para análise de cotovelo detalhada."
+    else:
+        rationale = f"K={best_k} definido manualmente pelo usuário."
 
     km_final = KMeans(n_clusters=best_k, random_state=42, n_init=10)
     final_labels = km_final.fit_predict(X_scaled)
     final_sil = _safe(silhouette_score(X_scaled, final_labels))
+    centroids = km_final.cluster_centers_
 
-    # Additional clustering metrics
+    # Clustering quality metrics
     try:
         calinski = _safe(calinski_harabasz_score(X_scaled, final_labels))
     except Exception:
@@ -400,11 +434,19 @@ def _run_clustering(df, features):
     except Exception:
         davies = None
 
+    # Euclidean distance matrix between centroids
+    from scipy.spatial.distance import cdist
+    euclidean_matrix = cdist(centroids, centroids, metric="euclidean")
+    euclidean_data = {
+        "labels": [f"C{i}" for i in range(best_k)],
+        "values": [[_safe(euclidean_matrix[i][j]) for j in range(best_k)] for i in range(best_k)],
+    }
+
     # Cluster sizes
     unique, counts = np.unique(final_labels, return_counts=True)
     cluster_sizes = [{"cluster": int(u), "size": int(c)} for u, c in zip(unique, counts)]
 
-    # Cluster means (original scale)
+    # Cluster profiles (original scale)
     work_with_labels = work.copy()
     work_with_labels["_cluster"] = final_labels
     cluster_profiles = []
@@ -418,7 +460,7 @@ def _run_clustering(df, features):
                 profile[f] = str(subset[f].mode().iloc[0]) if not subset[f].mode().empty else ""
         cluster_profiles.append(profile)
 
-    # Scatter data (first 2 features for 2D viz)
+    # Scatter (first 2 features)
     f1, f2 = valid_features[0], valid_features[1]
     scatter = {
         "x_col": f1, "y_col": f2,
@@ -430,7 +472,7 @@ def _run_clustering(df, features):
 
     return {
         "model_type": "clustering", "features": valid_features,
-        "best_k": best_k,
+        "best_k": best_k, "auto_k": auto_k, "rationale": rationale,
         "metrics": {
             "silhouette": final_sil,
             "inertia": _safe(km_final.inertia_),
@@ -441,6 +483,7 @@ def _run_clustering(df, features):
             "accuracy": None, "precision": None, "recall": None,
             "f1": None, "auc": None, "ks": None,
         },
+        "euclidean": euclidean_data,
         "inertias": inertias, "silhouettes": silhouettes,
         "cluster_sizes": cluster_sizes, "cluster_profiles": cluster_profiles,
         "scatter": scatter, "total_points": len(X),
@@ -608,6 +651,12 @@ def generate_analytics_html(data: dict) -> str:
                 <select id="predTarget" class="aa-select">
                     {"".join(f'<option value="{c}">{c}</option>' for c in all_cols)}
                 </select>
+            </div>
+
+            <div class="aa-form-group" id="predClustersGroup" style="display:none;">
+                <label class="aa-label">Quantidade de Clusters (0 = automático)</label>
+                <input id="predNClusters" type="number" min="0" max="20" value="0"
+                       class="aa-select" style="font-family:'JetBrains Mono',monospace;">
             </div>
 
             <div class="aa-form-group">
@@ -810,15 +859,19 @@ function updatePredUI() {{
     const mt = document.getElementById('predModelType').value;
     const info = document.getElementById('predModelInfo');
     const targetGroup = document.getElementById('predTargetGroup');
+    const clustersGroup = document.getElementById('predClustersGroup');
     if (mt === 'linear') {{
-        info.textContent = 'Regressão Linear: prevê um valor numérico contínuo. A variável alvo deve ser numérica.';
+        info.textContent = 'Regressão Linear: prevê um valor numérico contínuo. Variáveis categóricas serão codificadas automaticamente (Label Encoding).';
         targetGroup.style.display = 'block';
+        clustersGroup.style.display = 'none';
     }} else if (mt === 'logistic') {{
         info.textContent = 'Regressão Logística: classifica em categorias. Métricas: AUC, KS, Precision, Recall, F1, Acurácia + Matriz de Confusão.';
         targetGroup.style.display = 'block';
+        clustersGroup.style.display = 'none';
     }} else {{
-        info.textContent = 'Clusterização K-Means: agrupa dados similares automaticamente. Não requer variável alvo. Selecione apenas as features.';
+        info.textContent = 'Clusterização K-Means: agrupa dados similares. Informe a quantidade de clusters ou deixe 0 para detecção automática via Silhouette Score.';
         targetGroup.style.display = 'none';
+        clustersGroup.style.display = 'block';
     }}
 }}
 
@@ -837,7 +890,7 @@ async function runPrediction() {{
     status.textContent = 'Executando modelo...';
 
     try {{
-        const body = {{ query_data: DATA, target: modelType === 'clustering' ? '' : target, features, model_type: modelType }};
+        const body = {{ query_data: DATA, target: modelType === 'clustering' ? '' : target, features, model_type: modelType, n_clusters: modelType === 'clustering' ? parseInt(document.getElementById('predNClusters').value) || 0 : 0 }};
         const res = await fetch('/api/analytics/predict', {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
@@ -964,7 +1017,7 @@ function renderLogisticResult(r) {{
 
 function renderClusteringResult(r) {{
     const m = r.metrics;
-    let html = `<div class="aa-section"><div class="aa-section-title">Clusterização K-Means — ${{r.best_k}} Clusters</div>
+    let html = `<div class="aa-section"><div class="aa-section-title">Clusterização K-Means — ${{r.best_k}} Clusters ${{r.auto_k ? '(automático)' : '(definido pelo usuário)'}}</div>
     <div class="aa-grid aa-grid-6" style="margin-bottom:16px;">
         <div class="aa-metric-card"><div class="aa-metric-value">${{r.best_k}}</div><div class="aa-metric-label">Clusters (K)</div></div>
         <div class="aa-metric-card"><div class="aa-metric-value">${{fmt(m.silhouette)}}</div><div class="aa-metric-label">Silhouette</div></div>
@@ -983,12 +1036,41 @@ function renderClusteringResult(r) {{
     }});
     html += '</div></div>';
 
+    // Charts: Scatter + Elbow + Euclidean
     html += `<div class="aa-section"><div class="aa-section-title">Visualizações</div>
     <div class="aa-grid aa-grid-2">
         <div class="aa-card"><div class="aa-card-title">Dispersão (${{r.scatter.x_col}} × ${{r.scatter.y_col}})</div><div style="height:300px;"><canvas id="predChart1"></canvas></div></div>
-        <div class="aa-card"><div class="aa-card-title">Método do Cotovelo (Elbow)</div><div style="height:300px;"><canvas id="predChart2"></canvas></div></div>
-    </div></div>`;
+        <div class="aa-card"><div class="aa-card-title">Método do Cotovelo (Elbow)</div><div style="height:300px;"><canvas id="predChart2"></canvas></div>
+            <div class="aa-info" style="margin-top:10px;">${{r.rationale || ''}}</div>
+        </div>
+    </div>
+    <div class="aa-grid aa-grid-2" style="margin-top:16px;">
+        <div class="aa-card"><div class="aa-card-title">Distância Euclidiana entre Centróides</div><div style="height:300px;"><canvas id="predChart3"></canvas></div></div>
+        <div class="aa-card"><div class="aa-card-title">Matriz de Distância Euclidiana</div>`;
 
+    // Euclidean heatmap table
+    if (r.euclidean) {{
+        const euc = r.euclidean;
+        const n = euc.labels.length;
+        html += `<div style="overflow-x:auto;"><div class="corr-grid" style="grid-template-columns:56px repeat(${{n}}, 56px);display:inline-grid;gap:1px;background:#21262d;border-radius:8px;overflow:hidden;">`;
+        html += '<div class="corr-cell corr-header"></div>';
+        euc.labels.forEach(l => html += `<div class="corr-cell corr-header">${{l}}</div>`);
+        const maxDist = Math.max(...euc.values.flat().filter(v => v !== null), 0.01);
+        for (let i = 0; i < n; i++) {{
+            html += `<div class="corr-cell corr-header" style="width:56px;justify-content:flex-end;padding-right:4px;">${{euc.labels[i]}}</div>`;
+            for (let j = 0; j < n; j++) {{
+                const v = euc.values[i][j];
+                const intensity = i === j ? 0 : (v / maxDist);
+                const bg = i === j ? '#161b22' : `rgba(255, 99, 71, ${{(intensity * 0.7 + 0.1).toFixed(2)}})`;
+                const tc = intensity > 0.4 ? '#fff' : '#c9d1d9';
+                html += `<div class="corr-cell" style="background:${{bg}};color:${{tc}}" title="${{euc.labels[i]}} ↔ ${{euc.labels[j]}}: ${{v !== null ? v.toFixed(3) : '—'}}">${{i === j ? '0' : (v !== null ? v.toFixed(2) : '—')}}</div>`;
+            }}
+        }}
+        html += '</div></div>';
+    }}
+    html += '</div></div></div>';
+
+    // Cluster profiles
     if (r.cluster_profiles && r.cluster_profiles.length > 0) {{
         html += '<div class="aa-section"><div class="aa-section-title">Perfil dos Clusters (Médias)</div>';
         html += '<div class="aa-card" style="overflow-x:auto;"><table class="aa-freq-table"><thead><tr><th>Cluster</th><th>Tamanho</th>';
@@ -1087,6 +1169,27 @@ function renderPredCharts(r) {{
                     ],
                 }},
                 options: {{ responsive:true, maintainAspectRatio:false, scales:{{ y:{{ title:{{ display:true, text:'Inertia', color:'#ff6347' }}, position:'left' }}, y1:{{ title:{{ display:true, text:'Silhouette', color:'#39d353' }}, position:'right', grid:{{ drawOnChartArea:false }}, min:0, max:1 }} }} }},
+            }});
+        }}
+
+        // Euclidean distance bar chart
+        const c3 = document.getElementById('predChart3');
+        if (c3 && r.euclidean) {{
+            const euc = r.euclidean;
+            const labels = [];
+            const values = [];
+            const colors = [];
+            for (let i = 0; i < euc.labels.length; i++) {{
+                for (let j = i + 1; j < euc.labels.length; j++) {{
+                    labels.push(`${{euc.labels[i]}} ↔ ${{euc.labels[j]}}`);
+                    values.push(euc.values[i][j]);
+                    colors.push(clPalette[(i + j) % clPalette.length] + '99');
+                }}
+            }}
+            new Chart(c3, {{
+                type: 'bar',
+                data: {{ labels, datasets: [{{ label: 'Distância Euclidiana', data: values, backgroundColor: colors, borderWidth: 0, borderRadius: 4 }}] }},
+                options: {{ responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{{ legend:{{ display:false }} }}, scales:{{ x:{{ title:{{ display:true, text:'Distância Euclidiana', color:'#c9d1d9', font:{{ size:10 }} }}, beginAtZero:true }}, y:{{ ticks:{{ font:{{ size:10 }} }} }} }} }},
             }});
         }}
     }}
