@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Insights — Fala Gaiotto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        fg: {
+                            900: '#0a0c10',
+                            800: '#0d1117',
+                            700: '#161b22',
+                            600: '#1c2128',
+                            500: '#21262d',
+                            border: '#30363d',
+                            muted: '#8b949e',
+                            text: '#c9d1d9',
+                            bright: '#e6edf3',
+                            accent: '#ff6347',
+                            'accent-hover': '#ff4500',
+                            green: '#39d353',
+                            'green-dim': '#0e4429',
+                            orange: '#ff6347',
+                            blue: '#58a6ff',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
+                        sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        code, pre, .font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .pulse-dot { animation: pulse 1.8s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .shimmer { background: linear-gradient(90deg, #161b22 25%, #1c2128 50%, #161b22 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* Table */
+        .table-container { max-height: 420px; overflow: auto; }
+        .table-container table { border-collapse: collapse; width: 100%; }
+        .table-container th { position: sticky; top: 0; z-index: 1; }
+
+        /* Active tab indicator */
+        .tab-active { color: #ff6347; position: relative; }
+        .tab-active::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ff6347;
+            border-radius: 1px;
+        }
+
+        /* Glow accent */
+        .glow-accent { box-shadow: 0 0 20px rgba(255, 99, 71, 0.08); }
+
+        /* Markdown styling */
+        .prose-custom p { margin-bottom: 0.5em; }
+        .prose-custom ul, .prose-custom ol { margin: 0.5em 0; padding-left: 1.5em; }
+        .prose-custom li { margin-bottom: 0.25em; }
+        .prose-custom strong { color: #e6edf3; }
+        .prose-custom code { background: #21262d; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.85em; }
+
+        /* Drop zone */
+        .drop-active { border-color: #ff6347 !important; background: rgba(255, 99, 71, 0.04); }
+    </style>
+</head>
+<body class="bg-fg-900 text-fg-text min-h-screen">
+
+<!-- ===== HEADER ===== -->
+<header class="bg-fg-800/80 backdrop-blur-md border-b border-fg-border sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight font-mono">
+                <span class="text-fg-bright">QUICK</span><span class="text-fg-accent">INSIGHTS</span>
+            </h1>
+            <span class="hidden sm:flex items-center gap-1.5 text-[10px] text-fg-muted border-l border-fg-border pl-3 uppercase tracking-widest">
+                <span class="w-1.5 h-1.5 rounded-full bg-fg-green"></span>
+                Deep Agent · OpenAI
+            </span>
+        </div>
+        <nav class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium">
+            <button onclick="showTab('query')" id="tab-query" class="tab-btn tab-active transition-colors">Consultar</button>
+            <button onclick="showTab('tables')" id="tab-tables" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Tabelas</button>
+            <button onclick="showTab('gallery')" id="tab-gallery" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Galeria</button>
+            <button onclick="showTab('config')" id="tab-config" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Configurar</button>
+            <button onclick="showTab('api')" id="tab-api" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">API</button>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+<!-- ===================== QUERY TAB ===================== -->
+<section id="panel-query" class="tab-panel">
+    <!-- Analysis type + badge -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+        <div class="flex-1">
+            <label class="text-[10px] text-fg-muted uppercase tracking-wider mb-1 block">Tipo de Análise</label>
+            <select id="analysisType" class="w-full bg-fg-700 border border-fg-border rounded-lg px-3 py-2.5 text-sm focus:border-fg-accent focus:outline-none focus:ring-1 focus:ring-fg-accent/30 transition">
+                <option value="">Carregando...</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="flex flex-wrap gap-2 mb-4">
+        <span class="text-[10px] text-fg-muted uppercase tracking-wider self-center mr-1">Exemplos</span>
+        <button onclick="useSuggestion(this)" class="text-xs bg-fg-700 border border-fg-border rounded-full px-3 py-1.5 hover:border-fg-accent hover:text-fg-accent transition-all">Quais tabelas existem?</button>
+        <button onclick="useSuggestion(this)" class="text-xs bg-fg-700 border border-fg-border rounded-full px-3 py-1.5 hover:border-fg-accent hover:text-fg-accent transition-all">Mostre os 10 primeiros registros</button>
+        <button onclick="useSuggestion(this)" class="text-xs bg-fg-700 border border-fg-border rounded-full px-3 py-1.5 hover:border-fg-accent hover:text-fg-accent transition-all">Qual o total por categoria?</button>
+        <button onclick="useSuggestion(this)" class="text-xs bg-fg-700 border border-fg-border rounded-full px-3 py-1.5 hover:border-fg-accent hover:text-fg-accent transition-all">Quais são os padrões dos dados?</button>
+    </div>
+
+    <!-- Chat area -->
+    <div id="chatArea" class="bg-fg-800 rounded-xl border border-fg-border min-h-[320px] max-h-[62vh] overflow-y-auto p-5 mb-4 space-y-4 glow-accent">
+        <div class="text-center text-fg-muted text-sm py-16">
+            <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-fg-700 border border-fg-border flex items-center justify-center">
+                <svg class="w-6 h-6 text-fg-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" />
+                </svg>
+            </div>
+            <p class="font-medium text-fg-text">Faça uma pergunta sobre seus dados</p>
+            <p class="text-xs mt-1.5 text-fg-muted">Deep Agent com planejamento, SQL automático e visualização interativa via PyGWalker</p>
+        </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="flex gap-2">
+        <input id="queryInput" type="text" placeholder="Digite sua pergunta em linguagem natural..."
+               class="flex-1 bg-fg-700 border border-fg-border rounded-xl px-4 py-3 text-sm focus:border-fg-accent focus:outline-none focus:ring-1 focus:ring-fg-accent/30 transition placeholder:text-fg-muted/50"
+               onkeydown="if(event.key==='Enter')sendQuery()">
+        <select id="resultLimit" title="Limite de registros"
+                class="bg-fg-700 border border-fg-border rounded-xl px-3 py-3 text-xs text-fg-muted focus:border-fg-accent focus:outline-none transition font-mono w-[90px]">
+            <option value="20" selected>20 rows</option>
+            <option value="50">50 rows</option>
+            <option value="100">100 rows</option>
+            <option value="500">500 rows</option>
+            <option value="1000">1000 rows</option>
+            <option value="0">Todos</option>
+        </select>
+        <button onclick="sendQuery()" id="btnSend"
+                class="bg-fg-accent hover:bg-fg-accent-hover text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95">
+            Enviar
+        </button>
+    </div>
+</section>
+
+<!-- ===================== TABLES TAB ===================== -->
+<section id="panel-tables" class="tab-panel hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Upload -->
+        <div class="lg:col-span-1">
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+                <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-3">Upload Excel</h2>
+                <div id="dropZone"
+                     class="border-2 border-dashed border-fg-border rounded-xl p-8 text-center cursor-pointer hover:border-fg-accent/50 transition-all"
+                     onclick="document.getElementById('fileInput').click()"
+                     ondragover="event.preventDefault(); this.classList.add('drop-active')"
+                     ondragleave="this.classList.remove('drop-active')"
+                     ondrop="handleDrop(event)">
+                    <div class="w-10 h-10 mx-auto mb-3 rounded-lg bg-fg-700 border border-fg-border flex items-center justify-center">
+                        <svg class="w-5 h-5 text-fg-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
+                    </div>
+                    <p class="text-xs text-fg-muted">Arraste um arquivo <span class="text-fg-accent font-mono">.xlsx</span> ou clique</p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden" onchange="uploadFile(this.files[0])">
+                </div>
+                <div id="uploadStatus" class="mt-3 text-xs hidden"></div>
+            </div>
+        </div>
+
+        <!-- Tables list -->
+        <div class="lg:col-span-2">
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Tabelas no Banco</h2>
+                    <button onclick="loadTables()" class="text-xs text-fg-muted hover:text-fg-accent transition">Atualizar</button>
+                </div>
+                <div id="tablesList" class="space-y-2">
+                    <p class="text-xs text-fg-muted">Carregando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table preview -->
+    <div id="tablePreview" class="mt-6 hidden">
+        <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider" id="previewTitle">Preview</h2>
+                <button onclick="document.getElementById('tablePreview').classList.add('hidden')" class="text-xs text-fg-muted hover:text-red-400 transition">Fechar</button>
+            </div>
+            <div id="previewContent" class="table-container"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== CONFIG TAB ===================== -->
+<section id="panel-config" class="tab-panel hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1">
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Tipos de Análise</h2>
+                    <button onclick="newAnalysisType()" class="text-xs bg-fg-green/20 text-fg-green border border-fg-green/30 px-2.5 py-1 rounded-lg hover:bg-fg-green/30 transition">+ Novo</button>
+                </div>
+                <div id="analysisTypesList" class="space-y-2">
+                    <p class="text-xs text-fg-muted">Carregando...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2">
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+                <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-4" id="editorTitle">Selecione um tipo de análise</h2>
+                <form id="analysisForm" class="space-y-4 hidden">
+                    <input type="hidden" id="editId">
+                    <div>
+                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome</label>
+                        <input id="editName" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">System Prompt</label>
+                        <textarea id="editPrompt" rows="5" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Guardrails de Entrada</label>
+                        <textarea id="editGuardIn" rows="3" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Guardrails de Saída</label>
+                        <textarea id="editGuardOut" rows="3" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" onclick="saveAnalysisType()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Salvar</button>
+                        <button type="button" onclick="deleteAnalysisType()" id="btnDelete" class="bg-fg-500 hover:bg-red-900/50 text-fg-muted hover:text-red-400 px-4 py-2 rounded-lg text-sm transition hidden">Excluir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== GALLERY TAB ===================== -->
+<section id="panel-gallery" class="tab-panel hidden">
+    <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Galeria de Análises</h2>
+            <span id="galleryCount" class="text-[10px] text-fg-muted font-mono"></span>
+        </div>
+        <div id="galleryList" class="space-y-3">
+            <p class="text-xs text-fg-muted">Carregando...</p>
+        </div>
+        <div id="galleryEmpty" class="hidden text-center py-10">
+            <p class="text-fg-muted text-sm">Nenhuma análise salva.</p>
+            <p class="text-fg-muted text-xs mt-1">Use o botão "Salvar na Galeria" na tela Explorar.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== API TAB ===================== -->
+<section id="panel-api" class="tab-panel hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+                <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-3">Chaves de API</h2>
+                <div class="flex gap-2 mb-4">
+                    <input id="keyLabel" type="text" placeholder="Label da chave" class="flex-1 bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition">
+                    <button onclick="createApiKey()" class="bg-fg-green/20 text-fg-green border border-fg-green/30 px-3 py-2 rounded-lg text-sm hover:bg-fg-green/30 transition">Gerar</button>
+                </div>
+                <div id="keyResult" class="hidden mb-4 bg-fg-900 border border-fg-green/40 rounded-lg p-3">
+                    <p class="text-[10px] text-fg-green uppercase tracking-wider mb-1">Chave gerada — copie agora</p>
+                    <code id="keyValue" class="text-xs text-fg-bright break-all font-mono"></code>
+                </div>
+                <div id="keysList" class="space-y-2">
+                    <p class="text-xs text-fg-muted">Carregando...</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+                <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-3">Documentação</h2>
+                <div class="space-y-4 text-xs">
+                    <div>
+                        <h3 class="text-fg-green font-mono font-bold mb-1.5">POST /api/v1/query</h3>
+                        <p class="text-fg-muted mb-2">Consultar dados via linguagem natural (autenticado)</p>
+                        <pre class="bg-fg-900 rounded-lg p-3 overflow-x-auto text-fg-muted font-mono text-[11px] leading-relaxed border border-fg-border">curl -X POST http://localhost:8000/api/v1/query \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: SUA_CHAVE_AQUI" \
+  -d '{"question": "Quais tabelas existem?"}'</pre>
+                    </div>
+                    <div>
+                        <h3 class="text-fg-green font-mono font-bold mb-1">Headers</h3>
+                        <p class="text-fg-muted"><code class="text-fg-accent font-mono bg-fg-900 px-1.5 py-0.5 rounded">X-API-Key</code> — Chave gerada nesta tela</p>
+                    </div>
+                    <div>
+                        <h3 class="text-fg-green font-mono font-bold mb-1">Segurança</h3>
+                        <p class="text-fg-muted">Chaves armazenadas com hash SHA256 + salt. Valor original nunca salvo.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-fg-green font-mono font-bold mb-1">Stack</h3>
+                        <p class="text-fg-muted">Deep Agent · OpenAI · LangGraph · SQLDatabaseToolkit</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<!-- Email Modal -->
+<div id="emailModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="bg-fg-800 border border-fg-border rounded-xl p-6 w-full max-w-md mx-4 fade-in shadow-2xl">
+        <h3 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-4">Enviar por Email</h3>
+        <div class="space-y-3">
+            <div>
+                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Destinatário</label>
+                <input id="emailTo" type="email" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition">
+            </div>
+            <div>
+                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Assunto</label>
+                <input id="emailSubject" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition">
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button onclick="confirmSendEmail()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Enviar</button>
+            <button onclick="closeEmailModal()" class="bg-fg-500 text-fg-muted px-4 py-2 rounded-lg text-sm transition hover:text-fg-text">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="border-t border-fg-border mt-12 py-5 text-center">
+    <div class="font-mono text-sm font-bold">
+        <span class="text-fg-bright">QUICK</span><span class="text-fg-accent">INSIGHTS</span>
+    </div>
+    <p class="text-[10px] text-fg-muted mt-1.5 uppercase tracking-widest">
+        Deep Agent · OpenAI · by <a href="https://www.falagaiotto.com.br" target="_blank" class="text-fg-accent hover:underline">Fala Gaiotto</a>
+    </p>
+</footer>
+
+<script>
+// ============================
+// State
+// ============================
+let conversationContext = '';
+let lastQueryData = null;
+let lastQuestion = '';
+
+// ============================
+// Tabs
+// ============================
+function showTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('tab-active');
+        b.classList.add('text-fg-muted');
+    });
+    document.getElementById('panel-' + name).classList.remove('hidden');
+    const btn = document.getElementById('tab-' + name);
+    btn.classList.remove('text-fg-muted');
+    btn.classList.add('tab-active');
+
+    if (name === 'tables') loadTables();
+    if (name === 'config') loadAnalysisTypes();
+    if (name === 'gallery') loadGallery();
+    if (name === 'api') loadApiKeys();
+}
+
+// ============================
+// Query
+// ============================
+function useSuggestion(btn) {
+    document.getElementById('queryInput').value = btn.textContent;
+    sendQuery();
+}
+
+async function sendQuery() {
+    const input = document.getElementById('queryInput');
+    const q = input.value.trim();
+    if (!q) return;
+
+    input.value = '';
+    lastQuestion = q;
+    const analysisTypeId = document.getElementById('analysisType').value || null;
+
+    appendMessage('user', q);
+    appendMessage('loading', '');
+
+    try {
+        const res = await fetch('/api/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                question: q,
+                analysis_type_id: analysisTypeId ? parseInt(analysisTypeId) : null,
+                conversation_context: conversationContext || null,
+                result_limit: parseInt(document.getElementById('resultLimit').value) || 0,
+            }),
+        });
+        const data = await res.json();
+        removeLoading();
+
+        if (data.detail) {
+            appendMessage('error', data.detail);
+            return;
+        }
+
+        lastQueryData = data.data;
+        conversationContext = (conversationContext + '\n' + q + '\n' + (data.explanation || '')).slice(-2000);
+
+        let html = '';
+        if (data.sql_generated) {
+            html += `<details class="mb-3 group"><summary class="text-[10px] text-fg-muted cursor-pointer hover:text-fg-accent transition uppercase tracking-wider font-mono">SQL Gerado</summary><pre class="mt-2 bg-fg-900 rounded-lg p-3 text-[11px] text-fg-green overflow-x-auto font-mono border border-fg-border leading-relaxed">${escapeHtml(data.sql_generated)}</pre></details>`;
+        }
+        if (data.explanation) {
+            html += `<div class="prose-custom text-sm leading-relaxed">${marked.parse(data.explanation)}</div>`;
+        }
+        if (data.data && data.data.rows && data.data.rows.length > 0) {
+            html += renderTable(data.data);
+            html += renderActions();
+        }
+
+        appendMessage('assistant', html, true);
+    } catch (e) {
+        removeLoading();
+        appendMessage('error', 'Erro de conexão: ' + e.message);
+    }
+}
+
+function renderTable(data) {
+    if (!data.columns || !data.rows) return '';
+    let h = '<div class="table-container mt-3 rounded-lg border border-fg-border"><table>';
+    h += '<thead><tr>';
+    data.columns.forEach(c => {
+        h += `<th class="bg-fg-900 text-fg-accent text-[10px] uppercase tracking-wider font-mono px-3 py-2.5 text-left border-b border-fg-border">${escapeHtml(c)}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    data.rows.forEach((row, i) => {
+        h += `<tr class="${i % 2 === 0 ? 'bg-fg-800' : 'bg-fg-700/50'} hover:bg-fg-600/50 transition-colors">`;
+        data.columns.forEach(c => {
+            h += `<td class="text-xs px-3 py-2 border-b border-fg-border/50 font-mono">${escapeHtml(String(row[c] ?? ''))}</td>`;
+        });
+        h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    h += `<p class="text-[10px] text-fg-muted mt-1.5 font-mono">${data.rows.length} registro(s)</p>`;
+    return h;
+}
+
+function renderActions() {
+    return `
+        <div class="flex flex-wrap gap-2 mt-3">
+            <button onclick="openChart()" class="text-xs bg-fg-accent/15 text-fg-accent border border-fg-accent/25 px-3 py-1.5 rounded-lg hover:bg-fg-accent/25 transition font-medium">Gráfico</button>
+            <button onclick="openExplore()" class="text-xs bg-purple-500/15 text-purple-400 border border-purple-500/25 px-3 py-1.5 rounded-lg hover:bg-purple-500/25 transition font-medium">Explorar</button>
+            <button onclick="openAnalytics()" class="text-xs bg-amber-500/15 text-amber-400 border border-amber-500/25 px-3 py-1.5 rounded-lg hover:bg-amber-500/25 transition font-medium">Análise Avançada</button>
+            <button onclick="exportExcel()" class="text-xs bg-fg-green/15 text-fg-green border border-fg-green/25 px-3 py-1.5 rounded-lg hover:bg-fg-green/25 transition font-medium">Exportar Excel</button>
+            <button onclick="openEmailModal()" class="text-xs bg-fg-blue/15 text-fg-blue border border-fg-blue/25 px-3 py-1.5 rounded-lg hover:bg-fg-blue/25 transition font-medium">Enviar Email</button>
+        </div>`;
+}
+
+function appendMessage(role, content, isHtml = false) {
+    const chat = document.getElementById('chatArea');
+    if (chat.querySelector('.text-center')) chat.innerHTML = '';
+
+    const div = document.createElement('div');
+    div.className = 'fade-in';
+
+    if (role === 'user') {
+        div.innerHTML = `<div class="flex justify-end"><div class="bg-fg-accent/10 border border-fg-accent/20 rounded-xl px-4 py-2.5 max-w-[80%] text-sm">${escapeHtml(content)}</div></div>`;
+    } else if (role === 'loading') {
+        div.id = 'loadingMsg';
+        div.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Deep Agent analisando...</div>`;
+    } else if (role === 'error') {
+        div.innerHTML = `<div class="bg-red-900/15 border border-red-800/40 rounded-xl px-4 py-2.5 text-sm text-red-400">${escapeHtml(content)}</div>`;
+    } else {
+        div.innerHTML = `<div class="bg-fg-700/50 border border-fg-border rounded-xl px-4 py-3 text-sm max-w-full overflow-hidden">${isHtml ? content : escapeHtml(content)}</div>`;
+    }
+
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function removeLoading() {
+    const el = document.getElementById('loadingMsg');
+    if (el) el.remove();
+}
+
+// ============================
+// Excel Export
+// ============================
+async function exportExcel() {
+    if (!lastQueryData) return;
+    try {
+        const res = await fetch('/api/export/excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lastQueryData),
+        });
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'quick_insights_export.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert('Erro ao exportar: ' + e.message);
+    }
+}
+
+// ============================
+// Chart (PyGWalker — auto-configured)
+// ============================
+async function openChart() {
+    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) {
+        alert('Sem dados para gráfico.');
+        return;
+    }
+
+    appendMessage('loading', '');
+    const loadingEl = document.getElementById('loadingMsg');
+    if (loadingEl) {
+        loadingEl.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Deep Agent gerando gráfico...</div>`;
+    }
+
+    try {
+        const res = await fetch('/api/chart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lastQueryData),
+        });
+
+        removeLoading();
+
+        if (!res.ok) {
+            const err = await res.json();
+            appendMessage('error', err.detail || 'Erro ao gerar gráfico');
+            return;
+        }
+
+        const html = await res.text();
+        const vizWindow = window.open('', '_blank', 'width=1400,height=850');
+        if (vizWindow) {
+            vizWindow.document.write(html);
+            vizWindow.document.close();
+            appendMessage('assistant',
+                '<div class="flex items-center gap-2 text-sm">' +
+                '<svg class="w-4 h-4 text-fg-green flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" /></svg>' +
+                '<span>Gráfico auto-configurado aberto — <span class="text-fg-accent font-mono text-xs">PyGWalker</span> com visualização sugerida pelo Deep Agent.</span>' +
+                '</div>',
+                true
+            );
+        } else {
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.click();
+            URL.revokeObjectURL(url);
+            appendMessage('assistant', 'Gráfico aberto em nova aba.', false);
+        }
+
+    } catch (e) {
+        removeLoading();
+        appendMessage('error', 'Erro ao gerar gráfico: ' + e.message);
+    }
+}
+
+// ============================
+// Explore (PyGWalker — free exploration)
+// ============================
+async function openExplore() {
+    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) {
+        alert('Sem dados para explorar.');
+        return;
+    }
+
+    appendMessage('loading', '');
+    const loadingEl = document.getElementById('loadingMsg');
+    if (loadingEl) {
+        loadingEl.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Abrindo explorador...</div>`;
+    }
+
+    try {
+        const res = await fetch('/api/explore', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lastQueryData),
+        });
+
+        removeLoading();
+
+        if (!res.ok) {
+            const err = await res.json();
+            appendMessage('error', err.detail || 'Erro ao abrir explorador');
+            return;
+        }
+
+        const html = await res.text();
+        const vizWindow = window.open('', '_blank', 'width=1400,height=850');
+        if (vizWindow) {
+            vizWindow.document.write(html);
+            vizWindow.document.close();
+            appendMessage('assistant',
+                '<div class="flex items-center gap-2 text-sm">' +
+                '<svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" /></svg>' +
+                '<span>Explorador de dados aberto — <span class="text-purple-400 font-mono text-xs">PyGWalker</span> — arraste campos para criar suas visualizações.</span>' +
+                '</div>',
+                true
+            );
+        } else {
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.click();
+            URL.revokeObjectURL(url);
+            appendMessage('assistant', 'Explorador aberto em nova aba.', false);
+        }
+
+    } catch (e) {
+        removeLoading();
+        appendMessage('error', 'Erro ao abrir explorador: ' + e.message);
+    }
+}
+
+// ============================
+// Análise Avançada (scikit-learn)
+// ============================
+async function openAnalytics() {
+    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) {
+        alert('Sem dados para análise.');
+        return;
+    }
+
+    appendMessage('loading', '');
+    const loadingEl = document.getElementById('loadingMsg');
+    if (loadingEl) {
+        loadingEl.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Gerando análise avançada...</div>`;
+    }
+
+    try {
+        const res = await fetch('/api/analytics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lastQueryData),
+        });
+
+        removeLoading();
+
+        if (!res.ok) {
+            const err = await res.json();
+            appendMessage('error', err.detail || 'Erro ao gerar análise');
+            return;
+        }
+
+        const html = await res.text();
+        const w = window.open('', '_blank', 'width=1500,height=900');
+        if (w) {
+            w.document.write(html);
+            w.document.close();
+            appendMessage('assistant',
+                '<div class="flex items-center gap-2 text-sm">' +
+                '<svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" /></svg>' +
+                '<span>Análise Avançada aberta — <span class="text-amber-400 font-mono text-xs">scikit-learn</span> — estatísticas descritivas + modelos preditivos.</span>' +
+                '</div>',
+                true
+            );
+        } else {
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+    } catch (e) {
+        removeLoading();
+        appendMessage('error', 'Erro ao gerar análise: ' + e.message);
+    }
+}
+
+// ============================
+// Gallery
+// ============================
+async function loadGallery() {
+    const list = document.getElementById('galleryList');
+    const empty = document.getElementById('galleryEmpty');
+    const count = document.getElementById('galleryCount');
+    try {
+        const res = await fetch('/api/gallery');
+        const items = await res.json();
+        if (!items.length) {
+            list.classList.add('hidden');
+            empty.classList.remove('hidden');
+            count.textContent = '';
+            return;
+        }
+        list.classList.remove('hidden');
+        empty.classList.add('hidden');
+        count.textContent = items.length + ' análise(s)';
+
+        const baseUrl = window.location.origin;
+        list.innerHTML = items.map(item => {
+            const link = `${baseUrl}/api/gallery/${item.share_token}/view`;
+            const teamsUrl = `https://teams.microsoft.com/l/chat/0/0?message=${encodeURIComponent(item.title + ' — ' + link)}`;
+            const date = new Date(item.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+            return `
+            <div class="bg-fg-900 border border-fg-border rounded-lg p-4 fade-in">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-semibold text-fg-bright truncate">${escapeHtml(item.title)}</h3>
+                        ${item.description ? `<p class="text-xs text-fg-muted mt-0.5 truncate">${escapeHtml(item.description)}</p>` : ''}
+                        <p class="text-[10px] text-fg-muted mt-1 font-mono">${date}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <button onclick="window.open('${link}','_blank','width=1400,height=850')" class="text-[10px] bg-fg-accent/15 text-fg-accent border border-fg-accent/25 px-2.5 py-1 rounded-md hover:bg-fg-accent/25 transition font-medium" title="Abrir">Abrir</button>
+                        <button onclick="copyGalleryLink('${link}')" class="text-[10px] bg-fg-blue/15 text-fg-blue border border-fg-blue/25 px-2.5 py-1 rounded-md hover:bg-fg-blue/25 transition font-medium" title="Copiar link">Copiar Link</button>
+                        <a href="${teamsUrl}" target="_blank" class="text-[10px] bg-purple-500/15 text-purple-400 border border-purple-500/25 px-2.5 py-1 rounded-md hover:bg-purple-500/25 transition font-medium inline-block" title="Enviar por Teams">Teams</a>
+                        <button onclick="deleteGalleryItem(${item.id})" class="text-[10px] bg-red-500/15 text-red-400 border border-red-500/25 px-2.5 py-1 rounded-md hover:bg-red-500/25 transition font-medium" title="Excluir">Excluir</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        list.innerHTML = `<p class="text-xs text-red-400">Erro ao carregar galeria: ${e.message}</p>`;
+    }
+}
+
+function copyGalleryLink(link) {
+    navigator.clipboard.writeText(link).then(() => {
+        const btn = event.target;
+        const orig = btn.textContent;
+        btn.textContent = 'Copiado!';
+        btn.classList.add('text-fg-green');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('text-fg-green'); }, 1500);
+    });
+}
+
+async function deleteGalleryItem(id) {
+    if (!confirm('Excluir esta análise da galeria?')) return;
+    try {
+        await fetch('/api/gallery/' + id, { method: 'DELETE' });
+        loadGallery();
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+// ============================
+// Email
+// ============================
+function openEmailModal() {
+    document.getElementById('emailSubject').value = lastQuestion || 'Quick Insights - Resultado';
+    document.getElementById('emailModal').classList.remove('hidden');
+    document.getElementById('emailModal').classList.add('flex');
+}
+
+function closeEmailModal() {
+    document.getElementById('emailModal').classList.add('hidden');
+    document.getElementById('emailModal').classList.remove('flex');
+}
+
+async function confirmSendEmail() {
+    const to = document.getElementById('emailTo').value.trim();
+    const subject = document.getElementById('emailSubject').value.trim();
+    if (!to) { alert('Informe o email.'); return; }
+
+    try {
+        const res = await fetch('/api/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                to_email: to,
+                subject: subject,
+                body_html: `<p>${conversationContext.replace(/\n/g, '<br>')}</p>`,
+                excel_data: lastQueryData,
+            }),
+        });
+        const data = await res.json();
+        closeEmailModal();
+        if (data.error) {
+            appendMessage('error', data.error);
+        } else {
+            appendMessage('assistant', data.message);
+        }
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+// ============================
+// Tables
+// ============================
+async function loadTables() {
+    const el = document.getElementById('tablesList');
+    try {
+        const res = await fetch('/api/tables');
+        const tables = await res.json();
+        if (!tables.length) {
+            el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma tabela encontrada. Faça upload de um Excel.</p>';
+            return;
+        }
+        el.innerHTML = tables.map(t => `
+            <div class="flex items-center justify-between bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border hover:border-fg-accent/30 transition-all cursor-pointer group" onclick="previewTable('${t.name}')">
+                <div>
+                    <span class="text-sm text-fg-green font-mono font-bold">${escapeHtml(t.name)}</span>
+                    <span class="text-[10px] text-fg-muted ml-2 font-mono">${t.row_count} reg · ${t.columns.length} col</span>
+                </div>
+                <span class="text-xs text-fg-muted group-hover:text-fg-accent transition">&rarr;</span>
+            </div>
+        `).join('');
+    } catch (e) {
+        el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
+    }
+}
+
+async function previewTable(name) {
+    const panel = document.getElementById('tablePreview');
+    const content = document.getElementById('previewContent');
+    document.getElementById('previewTitle').textContent = `Preview: ${name}`;
+    panel.classList.remove('hidden');
+    content.innerHTML = '<div class="shimmer h-32 rounded-lg"></div>';
+
+    try {
+        const res = await fetch(`/api/tables/${encodeURIComponent(name)}/preview`);
+        const data = await res.json();
+        content.innerHTML = renderTable(data);
+    } catch (e) {
+        content.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
+    }
+}
+
+// ============================
+// Upload
+// ============================
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drop-active');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+}
+
+async function uploadFile(file) {
+    if (!file) return;
+    const status = document.getElementById('uploadStatus');
+    status.classList.remove('hidden');
+    status.className = 'mt-3 text-xs text-fg-accent';
+    status.textContent = `Enviando ${file.name}...`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.detail) {
+            status.className = 'mt-3 text-xs text-red-400';
+            status.textContent = data.detail;
+            return;
+        }
+
+        let html = `<span class="text-fg-green font-bold font-mono">${file.name}</span> processado:<br>`;
+        data.sheets.forEach(s => {
+            const icon = s.action === 'created' ? '+' : s.action === 'appended' ? '~' : '-';
+            html += `<span class="text-fg-accent font-mono">[${icon}]</span> <strong>${s.sheet}</strong> &rarr; ${s.table || 'ignorada'} (${s.action}, ${s.rows} linhas)<br>`;
+        });
+        status.innerHTML = html;
+        status.className = 'mt-3 text-xs text-fg-text';
+        loadTables();
+        loadAnalysisTypeSelector();
+    } catch (e) {
+        status.className = 'mt-3 text-xs text-red-400';
+        status.textContent = 'Erro: ' + e.message;
+    }
+}
+
+// ============================
+// Analysis Types
+// ============================
+async function loadAnalysisTypes() {
+    const el = document.getElementById('analysisTypesList');
+    try {
+        const res = await fetch('/api/analysis-types');
+        const types = await res.json();
+        if (!types.length) {
+            el.innerHTML = '<p class="text-xs text-fg-muted">Nenhum tipo cadastrado.</p>';
+            return;
+        }
+        el.innerHTML = types.map(t => `
+            <div class="bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border hover:border-fg-accent/30 transition-all cursor-pointer" onclick="editAnalysisType(${t.id})">
+                <span class="text-sm text-fg-green font-mono">${escapeHtml(t.name)}</span>
+            </div>
+        `).join('');
+    } catch (e) {
+        el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
+    }
+}
+
+async function loadAnalysisTypeSelector() {
+    const sel = document.getElementById('analysisType');
+    try {
+        const res = await fetch('/api/analysis-types');
+        const types = await res.json();
+        sel.innerHTML = '<option value="">— Selecione o Tipo de Análise —</option>' +
+            types.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+    } catch (e) {
+        sel.innerHTML = '<option value="">Erro ao carregar</option>';
+    }
+}
+
+function newAnalysisType() {
+    document.getElementById('editorTitle').textContent = 'Novo Tipo de Análise';
+    document.getElementById('analysisForm').classList.remove('hidden');
+    document.getElementById('editId').value = '';
+    document.getElementById('editName').value = '';
+    document.getElementById('editPrompt').value = '';
+    document.getElementById('editGuardIn').value = '';
+    document.getElementById('editGuardOut').value = '';
+    document.getElementById('btnDelete').classList.add('hidden');
+}
+
+async function editAnalysisType(id) {
+    try {
+        const res = await fetch(`/api/analysis-types/${id}`);
+        const t = await res.json();
+        document.getElementById('editorTitle').textContent = 'Editar: ' + t.name;
+        document.getElementById('analysisForm').classList.remove('hidden');
+        document.getElementById('editId').value = t.id;
+        document.getElementById('editName').value = t.name;
+        document.getElementById('editPrompt').value = t.system_prompt;
+        document.getElementById('editGuardIn').value = t.guardrails_input;
+        document.getElementById('editGuardOut').value = t.guardrails_output;
+        document.getElementById('btnDelete').classList.remove('hidden');
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+async function saveAnalysisType() {
+    const id = document.getElementById('editId').value;
+    const payload = {
+        name: document.getElementById('editName').value,
+        system_prompt: document.getElementById('editPrompt').value,
+        guardrails_input: document.getElementById('editGuardIn').value,
+        guardrails_output: document.getElementById('editGuardOut').value,
+    };
+    const url = id ? `/api/analysis-types/${id}` : '/api/analysis-types';
+    const method = id ? 'PUT' : 'POST';
+    try {
+        await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        loadAnalysisTypes();
+        loadAnalysisTypeSelector();
+        alert('Salvo.');
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+async function deleteAnalysisType() {
+    const id = document.getElementById('editId').value;
+    if (!id || !confirm('Excluir?')) return;
+    try {
+        await fetch(`/api/analysis-types/${id}`, { method: 'DELETE' });
+        document.getElementById('analysisForm').classList.add('hidden');
+        loadAnalysisTypes();
+        loadAnalysisTypeSelector();
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+// ============================
+// API Keys
+// ============================
+async function loadApiKeys() {
+    const el = document.getElementById('keysList');
+    try {
+        const res = await fetch('/api/keys');
+        const keys = await res.json();
+        if (!keys.length) {
+            el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma chave gerada.</p>';
+            return;
+        }
+        el.innerHTML = keys.map(k => `
+            <div class="flex items-center justify-between bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border">
+                <div>
+                    <span class="text-sm text-fg-text font-mono">${escapeHtml(k.label)}</span>
+                    <span class="text-[10px] text-fg-muted ml-2 font-mono">${k.created_at}</span>
+                </div>
+                <span class="text-[10px] font-mono font-bold ${k.is_active ? 'text-fg-green' : 'text-red-400'}">${k.is_active ? 'ATIVA' : 'INATIVA'}</span>
+            </div>
+        `).join('');
+    } catch (e) {
+        el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
+    }
+}
+
+async function createApiKey() {
+    const label = document.getElementById('keyLabel').value.trim();
+    if (!label) { alert('Informe um label.'); return; }
+    try {
+        const res = await fetch('/api/keys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label }),
+        });
+        const data = await res.json();
+        document.getElementById('keyResult').classList.remove('hidden');
+        document.getElementById('keyValue').textContent = data.key;
+        document.getElementById('keyLabel').value = '';
+        loadApiKeys();
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+// ============================
+// Utils
+// ============================
+function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+}
+
+// ============================
+// Init
+// ============================
+document.addEventListener('DOMContentLoaded', () => {
+    loadAnalysisTypeSelector();
+});
+</script>
+</body>
+</html>
