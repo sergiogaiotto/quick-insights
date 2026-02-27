@@ -61,3 +61,4 @@ class PredictionRequest(BaseModel):
     target: str = Field("", description="Coluna alvo (Y) — vazio para clustering")
     features: list[str] = Field(..., min_length=1, description="Colunas features (X)")
     model_type: str = Field(..., pattern="^(linear|logistic|clustering)$", description="Tipo de modelo")
+    n_clusters: int = Field(0, description="Qtd clusters para K-Means (0 = automático)")
