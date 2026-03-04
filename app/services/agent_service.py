@@ -266,6 +266,7 @@ async def run_query(
     analysis_type_id: int | None = None,
     context: str | None = None,
     result_limit: int | None = 20,
+    user_login: str = "",
 ) -> dict:
     """Run a natural language query through the Deep Agent."""
     agent = get_agent()
@@ -276,12 +277,23 @@ async def run_query(
         messages.append(AIMessage(content="Entendido, vou considerar o contexto anterior."))
     messages.append(HumanMessage(content=question))
 
-    result = agent.invoke({
-        "messages": messages,
-        "sql_query": "",
-        "query_result": {},
-        "analysis_type_id": analysis_type_id,
-    })
+    # LangSmith metadata — user_login appears in trace
+    run_config = {
+        "metadata": {
+            "user": user_login or "anonymous",
+        },
+        "tags": [f"user:{user_login}"] if user_login else [],
+    }
+
+    result = agent.invoke(
+        {
+            "messages": messages,
+            "sql_query": "",
+            "query_result": {},
+            "analysis_type_id": analysis_type_id,
+        },
+        config=run_config,
+    )
 
     # Extract results from message history
     final_messages = result["messages"]
