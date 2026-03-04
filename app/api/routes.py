@@ -21,7 +21,7 @@ from app.core.security import (
 from app.core.config import settings
 from app.services.excel_service import import_excel
 from app.services.agent_service import run_query, reset_agent
-from app.services.email_service import send_email_with_excel, export_to_excel_bytes
+from app.services.email_service import build_eml, export_to_excel_bytes
 from app.services.viz_service import generate_explore_html, generate_chart_html, generate_gallery_view_html
 from app.services.analytics_service import generate_analytics_html, run_prediction
 
@@ -358,15 +358,20 @@ async def analytics_predict(req: PredictionRequest):
 
 @router.post("/email")
 async def send_email(req: EmailRequest):
-    result = send_email_with_excel(
-        to_email=req.to_email,
-        subject=req.subject,
-        body_html=req.body_html,
-        data=req.excel_data,
-    )
-    if "error" in result:
-        raise HTTPException(500, result["error"])
-    return result
+    try:
+        eml_bytes = build_eml(
+            to_email=req.to_email,
+            subject=req.subject,
+            body_html=req.body_html,
+            data=req.excel_data,
+        )
+        return StreamingResponse(
+            io.BytesIO(eml_bytes),
+            media_type="message/rfc822",
+            headers={"Content-Disposition": f'attachment; filename="{req.subject}.eml"'},
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Erro ao gerar email: {str(e)}")
 
 
 # --- API Keys ---
