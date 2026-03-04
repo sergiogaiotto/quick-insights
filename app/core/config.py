@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     # API Security
     api_salt: str = os.getenv("API_SALT", "default-salt")
     api_secret_key: str = os.getenv("API_SECRET_KEY", "default-secret")
+    session_secret: str = os.getenv("SESSION_SECRET", "qi-session-secret-change-me")
 
     # Email
     email_address: str = os.getenv("EMAIL_ADDRESS", "")

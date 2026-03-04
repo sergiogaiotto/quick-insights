@@ -112,6 +112,23 @@
             <button onclick="showTab('gallery')" id="tab-gallery" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Galeria</button>
             <button onclick="showTab('config')" id="tab-config" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Configurar</button>
             <button onclick="showTab('api')" id="tab-api" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">API</button>
+            <span class="border-l border-fg-border pl-3 ml-1"></span>
+            <button onclick="showTab('users')" id="tab-users" class="tab-btn text-fg-muted hover:text-fg-text transition-colors hidden" title="Gerenciar Usuários">Usuários</button>
+            <div class="relative" id="userMenuContainer">
+                <button onclick="toggleUserMenu()" class="flex items-center gap-2 text-fg-muted hover:text-fg-text transition-colors text-xs">
+                    <span id="userDisplayName" class="hidden sm:inline font-mono"></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </button>
+                <div id="userDropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-fg-700 border border-fg-border rounded-lg shadow-xl py-2 z-50">
+                    <div class="px-3 py-2 border-b border-fg-border mb-1">
+                        <div class="text-xs font-semibold text-fg-bright" id="dropdownUserName"></div>
+                        <div class="text-[10px] text-fg-muted font-mono" id="dropdownUserType"></div>
+                    </div>
+                    <button onclick="doLogout()" class="w-full text-left px-3 py-2 text-xs text-fg-muted hover:text-red-400 hover:bg-fg-600 transition-colors">
+                        Sair
+                    </button>
+                </div>
+            </div>
         </nav>
     </div>
 </header>
@@ -337,6 +354,70 @@
     </div>
 </section>
 
+<!-- Users Panel (admin only) -->
+<section id="panel-users" class="tab-panel hidden">
+    <div class="bg-fg-800 border border-fg-border rounded-xl p-5 glow-accent">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Gerenciamento de Usuários</h2>
+            <button onclick="showCreateUserForm()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                Novo Usuário
+            </button>
+        </div>
+
+        <!-- Create/Edit form (hidden by default) -->
+        <div id="userFormPanel" class="hidden bg-fg-700 border border-fg-border rounded-lg p-4 mb-4">
+            <h3 class="text-xs font-semibold text-fg-bright mb-3" id="userFormTitle">Novo Usuário</h3>
+            <input type="hidden" id="userFormId">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Login</label>
+                    <input id="userFormLogin" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Senha</label>
+                    <input id="userFormPassword" type="password" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none" placeholder="Obrigatório para novo usuário">
+                </div>
+                <div>
+                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Tipo</label>
+                    <select id="userFormType" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none">
+                        <option value="user">Usuário Comum</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome de Exibição</label>
+                    <input id="userFormName" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Descrição do Perfil</label>
+                    <textarea id="userFormDesc" rows="2" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-3">
+                <button onclick="saveUser()" class="bg-fg-green hover:opacity-90 text-fg-900 px-4 py-1.5 rounded-lg text-xs font-semibold transition">Salvar</button>
+                <button onclick="hideUserForm()" class="bg-fg-500 text-fg-muted px-4 py-1.5 rounded-lg text-xs transition hover:text-fg-text">Cancelar</button>
+            </div>
+        </div>
+
+        <div id="usersTableContainer" class="table-container rounded-lg border border-fg-border">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-fg-700 text-fg-muted text-[10px] uppercase tracking-wider">
+                        <th class="px-4 py-2.5 text-left">Login</th>
+                        <th class="px-4 py-2.5 text-left">Nome</th>
+                        <th class="px-4 py-2.5 text-left">Tipo</th>
+                        <th class="px-4 py-2.5 text-left">Perfil</th>
+                        <th class="px-4 py-2.5 text-center">Status</th>
+                        <th class="px-4 py-2.5 text-left">Criado em</th>
+                        <th class="px-4 py-2.5 text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody" class="text-sm divide-y divide-fg-border"></tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
 </main>
 
 <!-- Email Modal -->
@@ -396,6 +477,7 @@ function showTab(name) {
     if (name === 'config') loadAnalysisTypes();
     if (name === 'gallery') loadGallery();
     if (name === 'api') loadApiKeys();
+    if (name === 'users') loadUsers();
 }
 
 // ============================
@@ -837,17 +919,37 @@ async function loadTables() {
             el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma tabela encontrada. Faça upload de um Excel.</p>';
             return;
         }
+        const isAdmin = currentUser && (currentUser.user_type === 'superuser' || currentUser.user_type === 'admin');
         el.innerHTML = tables.map(t => `
-            <div class="flex items-center justify-between bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border hover:border-fg-accent/30 transition-all cursor-pointer group" onclick="previewTable('${t.name}')">
-                <div>
+            <div class="flex items-center justify-between bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border hover:border-fg-accent/30 transition-all group">
+                <div class="cursor-pointer flex-1" onclick="previewTable('${t.name}')">
                     <span class="text-sm text-fg-green font-mono font-bold">${escapeHtml(t.name)}</span>
                     <span class="text-[10px] text-fg-muted ml-2 font-mono">${t.row_count} reg · ${t.columns.length} col</span>
                 </div>
-                <span class="text-xs text-fg-muted group-hover:text-fg-accent transition">&rarr;</span>
+                <div class="flex items-center gap-2">
+                    ${isAdmin ? `<button onclick="event.stopPropagation(); dropTable('${t.name}')" class="text-fg-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100" title="Excluir tabela">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    </button>` : ''}
+                    <span class="text-xs text-fg-muted group-hover:text-fg-accent transition cursor-pointer" onclick="previewTable('${t.name}')">&rarr;</span>
+                </div>
             </div>
         `).join('');
     } catch (e) {
         el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
+    }
+}
+
+async function dropTable(name) {
+    if (!confirm(`Excluir a tabela "${name}"?\n\nTodos os dados serão perdidos permanentemente.`)) return;
+    if (!confirm(`Confirme novamente: DROP TABLE "${name}"`)) return;
+    try {
+        const res = await fetch(`/api/tables/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) { alert(data.detail || data.error || 'Erro ao excluir.'); return; }
+        document.getElementById('tablePreview').classList.add('hidden');
+        loadTables();
+    } catch(e) {
+        alert('Erro: ' + e.message);
     }
 }
 
@@ -1062,9 +1164,208 @@ function escapeHtml(s) {
 }
 
 // ============================
+// Auth & User Menu
+// ============================
+let currentUser = null;
+
+async function loadCurrentUser() {
+    try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) { window.location.href = '/login'; return; }
+        currentUser = await res.json();
+        document.getElementById('userDisplayName').textContent = currentUser.display_name || currentUser.login;
+        document.getElementById('dropdownUserName').textContent = currentUser.display_name || currentUser.login;
+        const typeLabels = { superuser: 'Super Usuário', admin: 'Administrador', user: 'Usuário' };
+        document.getElementById('dropdownUserType').textContent = typeLabels[currentUser.user_type] || currentUser.user_type;
+
+        // Show users tab for admins/superusers
+        if (currentUser.user_type === 'superuser' || currentUser.user_type === 'admin') {
+            document.getElementById('tab-users').classList.remove('hidden');
+        }
+    } catch(e) {
+        window.location.href = '/login';
+    }
+}
+
+function toggleUserMenu() {
+    document.getElementById('userDropdown').classList.toggle('hidden');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('userMenuContainer');
+    if (container && !container.contains(e.target)) {
+        document.getElementById('userDropdown').classList.add('hidden');
+    }
+});
+
+async function doLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+}
+
+// ============================
+// User Management (admin)
+// ============================
+async function loadUsers() {
+    try {
+        const res = await fetch('/api/users');
+        if (!res.ok) return;
+        const users = await res.json();
+        const tbody = document.getElementById('usersTableBody');
+        const typeLabels = { superuser: 'Super Usuário', admin: 'Administrador', user: 'Usuário' };
+        const typeColors = { superuser: 'text-fg-accent', admin: 'text-fg-blue', user: 'text-fg-muted' };
+
+        tbody.innerHTML = users.map(u => `
+            <tr class="hover:bg-fg-700/50 transition-colors">
+                <td class="px-4 py-2.5 font-mono text-fg-bright">${u.login}</td>
+                <td class="px-4 py-2.5 text-fg-text">${u.display_name || '—'}</td>
+                <td class="px-4 py-2.5"><span class="${typeColors[u.user_type] || 'text-fg-muted'} text-xs font-semibold">${typeLabels[u.user_type] || u.user_type}</span></td>
+                <td class="px-4 py-2.5 text-fg-muted text-xs max-w-[200px] truncate" title="${(u.profile_description||'').replace(/"/g,'&quot;')}">${u.profile_description || '—'}</td>
+                <td class="px-4 py-2.5 text-center">${u.is_active ? '<span class="text-fg-green text-xs">Ativo</span>' : '<span class="text-red-400 text-xs">Inativo</span>'}</td>
+                <td class="px-4 py-2.5 text-fg-muted text-xs font-mono">${u.created_at ? u.created_at.slice(0,16).replace('T',' ') : '—'}</td>
+                <td class="px-4 py-2.5 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                        <button onclick="editUser(${u.id})" class="text-fg-muted hover:text-fg-blue text-xs transition-colors" title="Editar">Editar</button>
+                        <span class="text-fg-border">·</span>
+                        <button onclick="resetUserPassword(${u.id}, '${u.login}')" class="text-fg-muted hover:text-fg-accent text-xs transition-colors" title="Alterar Senha">Senha</button>
+                        ${u.user_type !== 'superuser' ? `<span class="text-fg-border">·</span><button onclick="removeUser(${u.id}, '${u.login}')" class="text-fg-muted hover:text-red-400 text-xs transition-colors" title="Excluir">Excluir</button>` : ''}
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) {
+        console.error('Erro ao carregar usuários:', e);
+    }
+}
+
+function showCreateUserForm() {
+    document.getElementById('userFormPanel').classList.remove('hidden');
+    document.getElementById('userFormTitle').textContent = 'Novo Usuário';
+    document.getElementById('userFormId').value = '';
+    document.getElementById('userFormLogin').value = '';
+    document.getElementById('userFormPassword').value = '';
+    document.getElementById('userFormType').value = 'user';
+    document.getElementById('userFormName').value = '';
+    document.getElementById('userFormDesc').value = '';
+    document.getElementById('userFormLogin').disabled = false;
+    document.getElementById('userFormPassword').placeholder = 'Obrigatório';
+}
+
+async function editUser(userId) {
+    try {
+        const res = await fetch('/api/users');
+        const users = await res.json();
+        const u = users.find(x => x.id === userId);
+        if (!u) return;
+
+        document.getElementById('userFormPanel').classList.remove('hidden');
+        document.getElementById('userFormTitle').textContent = `Editar — ${u.login}`;
+        document.getElementById('userFormId').value = u.id;
+        document.getElementById('userFormLogin').value = u.login;
+        document.getElementById('userFormLogin').disabled = false;
+        document.getElementById('userFormPassword').value = '';
+        document.getElementById('userFormPassword').placeholder = 'Deixe vazio para manter';
+        document.getElementById('userFormType').value = u.user_type;
+        document.getElementById('userFormName').value = u.display_name || '';
+        document.getElementById('userFormDesc').value = u.profile_description || '';
+
+        // Superuser type option
+        if (currentUser.user_type === 'superuser') {
+            let opt = document.getElementById('userFormType').querySelector('option[value="superuser"]');
+            if (!opt) {
+                opt = document.createElement('option');
+                opt.value = 'superuser';
+                opt.textContent = 'Super Usuário';
+                document.getElementById('userFormType').appendChild(opt);
+            }
+        }
+    } catch(e) {
+        alert('Erro ao carregar dados do usuário.');
+    }
+}
+
+function hideUserForm() {
+    document.getElementById('userFormPanel').classList.add('hidden');
+    // Remove superuser option if present
+    const suOpt = document.getElementById('userFormType').querySelector('option[value="superuser"]');
+    if (suOpt) suOpt.remove();
+}
+
+async function saveUser() {
+    const id = document.getElementById('userFormId').value;
+    const login = document.getElementById('userFormLogin').value.trim();
+    const password = document.getElementById('userFormPassword').value;
+    const userType = document.getElementById('userFormType').value;
+    const displayName = document.getElementById('userFormName').value.trim();
+    const profileDesc = document.getElementById('userFormDesc').value.trim();
+
+    if (!login) { alert('Login é obrigatório.'); return; }
+
+    try {
+        if (id) {
+            // Update
+            await fetch(`/api/users/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login, user_type: userType, display_name: displayName, profile_description: profileDesc }),
+            });
+            if (password) {
+                await fetch(`/api/users/${id}/password`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_password: password }),
+                });
+            }
+        } else {
+            // Create
+            if (!password) { alert('Senha é obrigatória para novo usuário.'); return; }
+            const res = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login, password, user_type: userType, display_name: displayName, profile_description: profileDesc }),
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                alert(err.detail || 'Erro ao criar usuário.');
+                return;
+            }
+        }
+        hideUserForm();
+        loadUsers();
+    } catch(e) {
+        alert('Erro ao salvar: ' + e.message);
+    }
+}
+
+async function resetUserPassword(userId, login) {
+    const pwd = prompt(`Nova senha para "${login}":`);
+    if (!pwd || pwd.length < 3) { if (pwd !== null) alert('Senha deve ter no mínimo 3 caracteres.'); return; }
+    try {
+        const res = await fetch(`/api/users/${userId}/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ new_password: pwd }),
+        });
+        if (res.ok) alert('Senha alterada.');
+        else { const e = await res.json(); alert(e.detail || 'Erro.'); }
+    } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function removeUser(userId, login) {
+    if (!confirm(`Excluir o usuário "${login}"? Esta ação é irreversível.`)) return;
+    try {
+        const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+        if (res.ok) loadUsers();
+        else { const e = await res.json(); alert(e.detail || 'Erro.'); }
+    } catch(e) { alert('Erro: ' + e.message); }
+}
+
+// ============================
 // Init
 // ============================
 document.addEventListener('DOMContentLoaded', () => {
+    loadCurrentUser();
     loadAnalysisTypeSelector();
 });
 </script>

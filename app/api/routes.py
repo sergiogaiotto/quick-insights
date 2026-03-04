@@ -2,16 +2,22 @@ import json
 import uuid
 import shutil
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, HTTPException, Header, Query
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi import APIRouter, UploadFile, File, HTTPException, Header, Query, Request, Response, Depends
+from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse
 import io
 
 from app.models.schemas import (
     QueryRequest, AnalysisTypeCreate, AnalysisTypeUpdate,
     EmailRequest, ApiKeyCreate, ApiQueryRequest, GallerySaveRequest, PredictionRequest,
+    LoginRequest, UserCreate, UserUpdate, PasswordChange,
 )
 from app.core.database import get_sync_connection, get_all_tables, execute_readonly_sql
-from app.core.security import validate_api_key, create_api_key
+from app.core.security import (
+    validate_api_key, create_api_key,
+    authenticate_user, create_session, validate_session, destroy_session,
+    get_user_count, create_user, list_users, get_user_by_id, update_user,
+    change_password, delete_user,
+)
 from app.core.config import settings
 from app.services.excel_service import import_excel
 from app.services.agent_service import run_query, reset_agent
@@ -20,6 +26,140 @@ from app.services.viz_service import generate_explore_html, generate_chart_html,
 from app.services.analytics_service import generate_analytics_html, run_prediction
 
 router = APIRouter(prefix="/api")
+
+COOKIE_NAME = "qi_session"
+
+
+# ---------------------------------------------------------------------------
+# Auth dependency
+# ---------------------------------------------------------------------------
+
+async def get_current_user(request: Request) -> dict:
+    token = request.cookies.get(COOKIE_NAME)
+    user = validate_session(token) if token else None
+    if user is None:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    return user
+
+
+async def require_admin(user: dict = Depends(get_current_user)) -> dict:
+    if user["user_type"] not in ("superuser", "admin"):
+        raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
+    return user
+
+
+# ---------------------------------------------------------------------------
+# Auth routes (public)
+# ---------------------------------------------------------------------------
+
+@router.post("/auth/login")
+async def login(req: LoginRequest, response: Response):
+    user = authenticate_user(req.login, req.password)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login ou senha inválidos")
+    token = create_session(user["id"])
+    response = JSONResponse(content={
+        "success": True,
+        "user": {
+            "id": user["id"], "login": user["login"],
+            "user_type": user["user_type"], "display_name": user["display_name"],
+        },
+    })
+    response.set_cookie(
+        key=COOKIE_NAME, value=token, httponly=True, samesite="lax", max_age=86400,
+    )
+    return response
+
+
+@router.post("/auth/logout")
+async def logout(request: Request):
+    token = request.cookies.get(COOKIE_NAME)
+    if token:
+        destroy_session(token)
+    response = JSONResponse(content={"success": True})
+    response.delete_cookie(COOKIE_NAME)
+    return response
+
+
+@router.get("/auth/me")
+async def auth_me(user: dict = Depends(get_current_user)):
+    return {
+        "id": user["id"], "login": user["login"],
+        "user_type": user["user_type"], "display_name": user["display_name"],
+        "profile_description": user.get("profile_description", ""),
+    }
+
+
+@router.get("/auth/check")
+async def auth_check(request: Request):
+    """Light check — returns user info or 401. Used by login page to detect existing session."""
+    token = request.cookies.get(COOKIE_NAME)
+    user = validate_session(token) if token else None
+    if user is None:
+        return JSONResponse(status_code=401, content={"authenticated": False, "has_users": get_user_count() > 0})
+    return {"authenticated": True, "user": {
+        "id": user["id"], "login": user["login"],
+        "user_type": user["user_type"], "display_name": user["display_name"],
+    }}
+
+
+# ---------------------------------------------------------------------------
+# User Management (admin only)
+# ---------------------------------------------------------------------------
+
+@router.get("/users")
+async def list_users_route(user: dict = Depends(require_admin)):
+    return list_users()
+
+
+@router.post("/users")
+async def create_user_route(req: UserCreate, user: dict = Depends(require_admin)):
+    try:
+        new_user = create_user(
+            login=req.login, password=req.password, user_type=req.user_type,
+            display_name=req.display_name, profile_description=req.profile_description,
+        )
+        return new_user
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+
+@router.put("/users/{user_id}")
+async def update_user_route(user_id: int, req: UserUpdate, user: dict = Depends(require_admin)):
+    target = get_user_by_id(user_id)
+    if not target:
+        raise HTTPException(404, "Usuário não encontrado")
+    # Only superuser can change user_type to superuser or edit other superusers
+    if target["user_type"] == "superuser" and user["user_type"] != "superuser":
+        raise HTTPException(403, "Apenas superusuários podem editar outros superusuários")
+    if req.user_type == "superuser" and user["user_type"] != "superuser":
+        raise HTTPException(403, "Apenas superusuários podem promover a superusuário")
+    update_user(user_id, **req.model_dump(exclude_none=True))
+    return {"success": True}
+
+
+@router.put("/users/{user_id}/password")
+async def change_password_route(user_id: int, req: PasswordChange, user: dict = Depends(require_admin)):
+    target = get_user_by_id(user_id)
+    if not target:
+        raise HTTPException(404, "Usuário não encontrado")
+    if target["user_type"] == "superuser" and user["user_type"] != "superuser":
+        raise HTTPException(403, "Apenas superusuários podem alterar senha de superusuários")
+    change_password(user_id, req.new_password)
+    return {"success": True}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user_route(user_id: int, user: dict = Depends(require_admin)):
+    target = get_user_by_id(user_id)
+    if not target:
+        raise HTTPException(404, "Usuário não encontrado")
+    if target["user_type"] == "superuser":
+        raise HTTPException(403, "Superusuários não podem ser excluídos")
+    if target["id"] == user["id"]:
+        raise HTTPException(400, "Você não pode excluir a si mesmo")
+    delete_user(user_id)
+    return {"success": True}
 
 
 # --- Tables ---
@@ -32,6 +172,15 @@ async def list_tables():
 @router.get("/tables/{table_name}/preview")
 async def preview_table(table_name: str, limit: int = Query(20, le=100)):
     result = execute_readonly_sql(f'SELECT * FROM "{table_name}" LIMIT {limit}')
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return result
+
+
+@router.delete("/tables/{table_name}")
+async def drop_table(table_name: str, user: dict = Depends(require_admin)):
+    from app.core.database import drop_user_table
+    result = drop_user_table(table_name)
     if "error" in result:
         raise HTTPException(400, result["error"])
     return result

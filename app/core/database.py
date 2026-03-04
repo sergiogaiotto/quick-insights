@@ -22,6 +22,27 @@ def init_metadata_tables():
     conn = get_sync_connection()
     try:
         conn.executescript("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                login TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT NOT NULL,
+                user_type TEXT NOT NULL DEFAULT 'user' CHECK(user_type IN ('superuser','admin','user')),
+                display_name TEXT NOT NULL DEFAULT '',
+                profile_description TEXT NOT NULL DEFAULT '',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token TEXT NOT NULL UNIQUE,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
             CREATE TABLE IF NOT EXISTS analysis_types (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE,
@@ -88,7 +109,7 @@ def init_metadata_tables():
 
 def get_all_tables() -> list[dict]:
     """List all user data tables (excluding internal metadata)."""
-    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "sqlite_sequence"}
+    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "sqlite_sequence"}
     conn = get_sync_connection()
     try:
         cursor = conn.execute(
@@ -141,6 +162,28 @@ def execute_readonly_sql(sql: str) -> dict:
         columns = [desc[0] for desc in cursor.description] if cursor.description else []
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
         return {"columns": columns, "rows": rows, "row_count": len(rows)}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        conn.close()
+
+
+def drop_user_table(table_name: str) -> dict:
+    """Drop a user data table. Internal metadata tables are protected."""
+    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "sqlite_sequence"}
+    if table_name in internal:
+        return {"error": f"A tabela '{table_name}' é interna e não pode ser excluída."}
+    conn = get_sync_connection()
+    try:
+        # Verify table exists
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,)
+        )
+        if cursor.fetchone() is None:
+            return {"error": f"Tabela '{table_name}' não encontrada."}
+        conn.execute(f'DROP TABLE "{table_name}"')
+        conn.commit()
+        return {"success": True, "message": f"Tabela '{table_name}' excluída."}
     except Exception as e:
         return {"error": str(e)}
     finally:

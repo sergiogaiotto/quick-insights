@@ -62,3 +62,30 @@ class PredictionRequest(BaseModel):
     features: list[str] = Field(..., min_length=1, description="Colunas features (X)")
     model_type: str = Field(..., pattern="^(linear|logistic|clustering)$", description="Tipo de modelo")
     n_clusters: int = Field(0, description="Qtd clusters para K-Means (0 = automático)")
+
+
+# --- Auth ---
+
+class LoginRequest(BaseModel):
+    login: str = Field(..., min_length=2)
+    password: str = Field(..., min_length=3)
+
+
+class UserCreate(BaseModel):
+    login: str = Field(..., min_length=2)
+    password: str = Field(..., min_length=3)
+    user_type: str = Field("user", pattern="^(admin|user)$")
+    display_name: str = ""
+    profile_description: str = ""
+
+
+class UserUpdate(BaseModel):
+    login: Optional[str] = None
+    user_type: Optional[str] = Field(None, pattern="^(superuser|admin|user)$")
+    display_name: Optional[str] = None
+    profile_description: Optional[str] = None
+    is_active: Optional[int] = None
+
+
+class PasswordChange(BaseModel):
+    new_password: str = Field(..., min_length=3)
