@@ -120,7 +120,7 @@ Logo abaixo da tabela de coeficientes, o sistema gera automaticamente uma recome
 
 ### Exportação e Email
 
-Qualquer resultado de consulta pode ser exportado para `.xlsx` com um clique. O sistema também suporta envio direto por email via Exchange/Outlook — o resultado é enviado como corpo HTML com anexo Excel, incluindo introdução padronizada.
+Qualquer resultado de consulta pode ser exportado para `.xlsx` com um clique. O sistema também gera arquivos `.eml` para envio via Outlook local — ao clicar em "Enviar Email", o sistema monta um arquivo `.eml` com destinatário, assunto, corpo HTML e anexo Excel embutido. O header `X-Unsent: 1` faz com que o Outlook abra o arquivo como rascunho pronto para envio, sem necessidade de configuração de servidor ou credenciais.
 
 ### API Externa
 
@@ -193,7 +193,7 @@ quick-insights/
 | Banco de Dados | SQLite | Armazenamento local zero-config |
 | Visualização | PyGWalker + Chart.js | Exploração interativa + gráficos |
 | Frontend | HTML + Tailwind CSS + JavaScript | SPA com dark theme |
-| Email | exchangelib | Outlook / Exchange |
+| Email | Python email (stdlib) + .eml | Outlook local via download |
 | Autenticação | SHA256 + salt + sessões httponly | Login, perfis, controle de acesso |
 | API Keys | SHA256 + salt | Autenticação REST externa |
 
@@ -251,7 +251,7 @@ quick-insights/
 | `DELETE` | `/api/gallery/{id}` | Autenticado | Excluir item da galeria |
 | `GET` | `/api/gallery/{token}/view` | Público | Visualizar item público via token |
 | `POST` | `/api/export/excel` | Autenticado | Exportar dados para .xlsx |
-| `POST` | `/api/email` | Autenticado | Enviar resultados por email |
+| `POST` | `/api/email` | Autenticado | Gerar .eml para Outlook local |
 
 ### Configuração e API Externa
 
@@ -400,9 +400,6 @@ Acesse **http://localhost:8000** — será redirecionado para a tela de login. N
 | `API_SALT` | Não | `default-salt` | Salt para hash SHA256 (senhas e API keys) |
 | `API_SECRET_KEY` | Não | `default-secret` | Chave secreta da aplicação |
 | `SESSION_SECRET` | Não | `qi-session-secret-change-me` | Secret para gestão de sessões |
-| `EMAIL_ADDRESS` | Não | — | Email Outlook para envio de resultados |
-| `EMAIL_PASSWORD` | Não | — | Senha ou app password do email |
-| `EMAIL_SERVER` | Não | `outlook.office365.com` | Servidor Exchange |
 | `HOST` | Não | `0.0.0.0` | Host do servidor |
 | `PORT` | Não | `8000` | Porta do servidor |
 
