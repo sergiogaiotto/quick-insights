@@ -208,13 +208,16 @@ async def upload_excel(file: UploadFile = File(...)):
 # --- Query (Natural Language via Deep Agent) ---
 
 @router.post("/query")
-async def query_nl(req: QueryRequest):
+async def query_nl(req: QueryRequest, request: Request):
+    user = getattr(request.state, "user", None)
+    user_login = user["login"] if user else ""
     try:
         result = await run_query(
             question=req.question,
             analysis_type_id=req.analysis_type_id,
             context=req.conversation_context,
             result_limit=req.result_limit,
+            user_login=user_login,
         )
         return result
     except Exception as e:
@@ -403,6 +406,7 @@ async def external_query(req: ApiQueryRequest, x_api_key: str = Header(...)):
         result = await run_query(
             question=req.question,
             analysis_type_id=req.analysis_type_id,
+            user_login=f"api-key:{x_api_key[:8]}",
         )
         return result
     except Exception as e:
