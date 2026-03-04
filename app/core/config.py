@@ -24,11 +24,6 @@ class Settings(BaseSettings):
     api_secret_key: str = os.getenv("API_SECRET_KEY", "default-secret")
     session_secret: str = os.getenv("SESSION_SECRET", "qi-session-secret-change-me")
 
-    # Email
-    email_address: str = os.getenv("EMAIL_ADDRESS", "")
-    email_password: str = os.getenv("EMAIL_PASSWORD", "")
-    email_server: str = os.getenv("EMAIL_SERVER", "outlook.office365.com")
-
     # Server
     host: str = os.getenv("HOST", "0.0.0.0")
     port: int = int(os.getenv("PORT", "8000"))
