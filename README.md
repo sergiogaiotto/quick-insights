@@ -8,7 +8,7 @@ Desenvolvido por [Sergio Gaiotto](https://www.falagaiotto.com.br) — Especialis
 
 ## Visão Geral
 
-Quick Insights é uma aplicação open-source que elimina a barreira técnica entre pessoas e seus dados. O sistema combina um **Deep Agent** com planejamento autônomo, exploração de schema e escrita de queries via skills progressivas, um motor de **análise estatística descritiva e preditiva** com modelos de machine learning, e **visualização interativa** com PyGWalker e Chart.js — tudo acessível via interface web em português brasileiro.
+Quick Insights é uma aplicação open-source que elimina a barreira técnica entre pessoas e seus dados. O sistema combina um **Deep Agent** com planejamento autônomo, exploração de schema e escrita de queries via skills progressivas, um motor de **análise estatística descritiva e preditiva** com modelos de machine learning, e **visualização interativa** com PyGWalker e Chart.js — tudo acessível via interface web em português brasileiro, protegido por autenticação com controle de acesso por perfil.
 
 Faz parte de uma iniciativa aplicada da [Fala Gaiotto](https://www.falagaiotto.com.br) para democratizar o acesso a dados e inteligência artificial.
 
@@ -16,15 +16,35 @@ Faz parte de uma iniciativa aplicada da [Fala Gaiotto](https://www.falagaiotto.c
 
 ## Funcionalidades
 
+### Autenticação e Controle de Acesso
+
+Toda a aplicação é protegida por autenticação obrigatória. O acesso exige login e senha, com sessões gerenciadas via cookie httponly com TTL de 24 horas.
+
+**Primeiro acesso** — quando o banco de dados não possui nenhum usuário cadastrado, a tela de login detecta essa condição e informa que as credenciais digitadas criarão automaticamente uma conta **Administrador** com o nome "Super Usuário". Não há seed, migration manual ou setup externo — basta iniciar o servidor e fazer o primeiro login.
+
+**Dois perfis de acesso:**
+
+**Administrador** — acesso total. Pode criar, editar e excluir usuários, excluir tabelas do banco de dados e acessar todas as funcionalidades da aplicação. Criado automaticamente no primeiro acesso com o nome "Super Usuário".
+
+**Usuário Comum** — acesso às funcionalidades de consulta, visualização, análise, exportação e galeria. Não vê a aba "Usuários" nem o botão de exclusão de tabelas.
+
+Cada usuário possui login, senha (SHA256 + salt), tipo, nome de exibição e descrição do perfil.
+
+### Gerenciamento de Usuários
+
+Aba dedicada na interface (visível apenas para administradores) com tabela CRUD completa. Permite criar novos usuários com definição de tipo e perfil, editar dados existentes, alterar senhas e desativar ou excluir contas. Proteção de integridade: ninguém pode excluir a si mesmo.
+
 ### Consulta em Linguagem Natural
 
 O núcleo da aplicação. O usuário digita uma pergunta em português e o Deep Agent autonomamente explora o banco de dados, identifica tabelas e colunas relevantes, gera SQL otimizado, executa e retorna resultados formatados com insights. Suporta contexto conversacional — perguntas de acompanhamento mantêm a referência da conversa anterior.
 
 O limite de registros retornados é configurável via dropdown na interface (20, 50, 100, 500, 1000 ou Todos). A lógica de LIMIT é aplicada após a geração do SQL pelo agente, garantindo que o usuário controla o volume independente do que o LLM decide.
 
-### Upload de Excel
+### Upload de Excel e Gestão de Tabelas
 
 Arquivos `.xlsx` são importados diretamente pela interface. Cada aba da planilha é convertida em uma tabela SQLite — se a tabela já existe, é recriada com os novos dados. Não há limite de abas ou colunas. Após o upload, as tabelas ficam imediatamente disponíveis para consulta.
+
+Administradores podem **excluir tabelas** diretamente pela aba Tabelas. O botão de exclusão (ícone de lixeira) aparece no hover de cada tabela e exige dupla confirmação antes de executar o `DROP TABLE`. Tabelas internas do sistema são protegidas contra exclusão.
 
 ### System Prompts e Tipos de Análise
 
@@ -62,13 +82,41 @@ O módulo de análise avançada gera automaticamente um dashboard estatístico c
 
 Três modelos estatísticos disponíveis, todos com label encoding automático para variáveis categóricas:
 
-**Regressão Linear** — prevê valores numéricos contínuos. Métricas específicas: R², R² Ajustado, MAE, MSE, RMSE, MAPE, Variância Explicada. Gráfico de dispersão Real vs Previsto com linha de referência. Coeficientes com barras de magnitude relativa e intercepto. Métricas de classificação derivadas por binarização na mediana (AUC, Precision, Recall, F1, KS, Acurácia).
+**Regressão Linear** — prevê valores numéricos contínuos. Métricas específicas: R², R² Ajustado, MAE, MSE, RMSE, MAPE, Variância Explicada. Gráfico de dispersão Real vs Previsto com linha de referência. Tabela de coeficientes com inferência estatística completa (detalhada abaixo). Métricas de classificação derivadas por binarização na mediana (AUC, Precision, Recall, F1, KS, Acurácia).
 
-**Regressão Logística** — classifica em categorias, sem restrição de quantidade de classes. Solver `lbfgs` com fallback para `saga` + StandardScaler quando necessário (`max_iter=5000`). Métricas de classificação: Acurácia, Precision, Recall, F1-Score, AUC-ROC, KS (Kolmogorov-Smirnov). Matriz de confusão com highlighting diagonal. Curva ROC para classificação binária. Gráfico de distribuição das predições.
+**Regressão Logística** — classifica em categorias, sem restrição de quantidade de classes. Solver `lbfgs` com fallback para `saga` + StandardScaler quando necessário (`max_iter=5000`). Métricas de classificação: Acurácia, Precision, Recall, F1-Score, AUC-ROC, KS (Kolmogorov-Smirnov). Tabela de coeficientes com inferência estatística completa (detalhada abaixo). Matriz de confusão com highlighting diagonal. Curva ROC para classificação binária. Gráfico de distribuição das predições.
 
 **Clusterização K-Means** — agrupamento não supervisionado sem variável alvo. O usuário pode definir a quantidade de clusters (2-20) ou deixar 0 para seleção automática via maior Silhouette Score. Métricas: Silhouette, Inertia, Calinski-Harabasz, Davies-Bouldin. Gráfico de dispersão colorido por cluster. Gráfico do Método do Cotovelo (Elbow) com curvas de Inertia e Silhouette em eixos duais, acompanhado de texto explicativo com o racional da seleção de K. Matriz de distância euclidiana entre centróides (heatmap + gráfico de barras). Tabela de perfis com médias por cluster.
 
 Todos os modelos exibem o bloco padronizado de 6 métricas estatísticas: AUC, Precision, Recall, KS, F1-Score e Acurácia.
+
+### Tabela de Coeficientes — Inferência Estatística
+
+Para regressão linear e logística, o sistema calcula e exibe uma tabela completa de inferência para cada variável (incluindo intercepto), com 7 colunas:
+
+**Coeff (B)** — coeficiente estimado. Magnitude e direção do efeito da variável sobre o alvo.
+
+**S.E.** — erro padrão da estimativa do coeficiente. Quanto menor, mais precisa a estimativa.
+
+**Wald / t** — estatística de teste. Na regressão logística: Wald χ² = (B / S.E.)². Na regressão linear: estatística t = B / S.E.
+
+**p-valor** — probabilidade de observar o efeito por acaso. p < 0.05 indica significância estatística com 95% de confiança.
+
+**Exp(B)** — exponencial do coeficiente. Na logística, representa o odds ratio (multiplicador da chance). Na linear, indica o fator multiplicativo por unidade de variação.
+
+**Inferior** — limite inferior do intervalo de confiança a 95%. Na logística, calculado sobre Exp(B). Na linear, sobre o coeficiente B.
+
+**Superior** — limite superior do intervalo de confiança a 95%.
+
+Cada coluna possui um tooltip interativo com explicação detalhada, contextualizada conforme o tipo de modelo. Variáveis estatisticamente significativas (p < 0.05) são destacadas com ★ verde e background diferenciado. Todos os valores são formatados com até 10 casas decimais, sem separador de milhar.
+
+**Cálculo na regressão linear:** matriz de covariância via `(XᵀX)⁻¹ · MSE`, erro padrão = raiz da diagonal, estatística t bilateral, p-value via distribuição t com n-p-1 graus de liberdade, IC 95% = B ± t₀.₉₇₅ · S.E.
+
+**Cálculo na regressão logística:** Fisher Information Matrix `XᵀWX` onde W = p̂(1-p̂) para binário, média OVR para multiclass. Wald = (B/S.E.)², p-value via χ² com 1 grau de liberdade, IC 95% para Exp(B) = e^(B ± 1.96·S.E.).
+
+### Recomendação de Variáveis
+
+Logo abaixo da tabela de coeficientes, o sistema gera automaticamente uma recomendação baseada na significância estatística. Lista as variáveis significativas ordenadas por p-valor (mais relevantes primeiro), com direção do efeito e Exp(B). Identifica as variáveis não significativas e sugere sua remoção para simplificação do modelo.
 
 ### Exportação e Email
 
@@ -76,7 +124,7 @@ Qualquer resultado de consulta pode ser exportado para `.xlsx` com um clique. O 
 
 ### API Externa
 
-Endpoint REST (`/api/v1/query`) para integração com sistemas externos. Autenticação via header `X-API-Key` com hash SHA256 + salt. Chaves são geradas e gerenciadas pela interface administrativa. Permite que aplicações terceiras consultem os dados usando a mesma infraestrutura de linguagem natural.
+Endpoint REST (`/api/v1/query`) para integração com sistemas externos. Autenticação via header `X-API-Key` com hash SHA256 + salt (independente da autenticação por sessão). Chaves são geradas e gerenciadas pela interface administrativa. Permite que aplicações terceiras consultem os dados usando a mesma infraestrutura de linguagem natural.
 
 ### Histórico de Consultas
 
@@ -102,28 +150,29 @@ quick-insights/
 │       └── SKILL.md                   # Como descobrir estrutura do banco
 │
 ├── app/
-│   ├── main.py                         # FastAPI app + startup + routing
+│   ├── main.py                         # FastAPI app + auth middleware + routing
 │   │
 │   ├── api/
-│   │   └── routes.py                  # 20+ endpoints REST
+│   │   └── routes.py                  # 35 endpoints REST (auth + CRUD + analytics)
 │   │
 │   ├── core/
 │   │   ├── config.py                  # Settings (pydantic-settings + .env)
-│   │   ├── database.py                # SQLAlchemy engine + schema + SQL exec
-│   │   └── security.py                # API keys com SHA256 + salt
+│   │   ├── database.py                # SQLAlchemy engine + schema + SQL exec + drop
+│   │   └── security.py                # Auth, sessões, API keys, gestão de usuários
 │   │
 │   ├── models/
 │   │   └── schemas.py                 # Pydantic: request/response models
 │   │
 │   ├── services/
 │   │   ├── agent_service.py           # Deep Agent: planning + tools + LLM
-│   │   ├── analytics_service.py       # Motor estatístico + ML + renderização
+│   │   ├── analytics_service.py       # Motor estatístico + ML + coeff table + render
 │   │   ├── viz_service.py             # PyGWalker + Chart.js LLM config
 │   │   ├── email_service.py           # Exchange/Outlook integration
 │   │   └── excel_service.py           # Import Excel → SQLite
 │   │
 │   ├── templates/
-│   │   └── default.html               # Frontend SPA (~1000 linhas)
+│   │   ├── login.html                 # Tela de login (standalone)
+│   │   └── default.html               # Frontend SPA principal
 │   │
 │   └── static/                         # Assets estáticos
 │
@@ -145,54 +194,97 @@ quick-insights/
 | Visualização | PyGWalker + Chart.js | Exploração interativa + gráficos |
 | Frontend | HTML + Tailwind CSS + JavaScript | SPA com dark theme |
 | Email | exchangelib | Outlook / Exchange |
-| Segurança | SHA256 + salt | Autenticação API |
+| Autenticação | SHA256 + salt + sessões httponly | Login, perfis, controle de acesso |
+| API Keys | SHA256 + salt | Autenticação REST externa |
 
 ---
 
 ## Endpoints da API
 
+### Autenticação
+
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | Público | Autenticar e criar sessão |
+| `POST` | `/api/auth/logout` | Autenticado | Encerrar sessão |
+| `GET` | `/api/auth/me` | Autenticado | Dados do usuário logado |
+| `GET` | `/api/auth/check` | Público | Verificar sessão + existência de usuários |
+
+### Gerenciamento de Usuários
+
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/users` | Admin | Listar todos os usuários |
+| `POST` | `/api/users` | Admin | Criar novo usuário |
+| `PUT` | `/api/users/{id}` | Admin | Atualizar dados do usuário |
+| `PUT` | `/api/users/{id}/password` | Admin | Alterar senha |
+| `DELETE` | `/api/users/{id}` | Admin | Excluir usuário |
+
 ### Consulta e Dados
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/` | Interface web (SPA) |
-| `GET` | `/api/tables` | Listar tabelas com schema e contagem |
-| `GET` | `/api/tables/{name}/preview` | Preview de uma tabela (até 100 linhas) |
-| `POST` | `/api/upload` | Upload de arquivo Excel (.xlsx) |
-| `POST` | `/api/query` | Consulta em linguagem natural |
-| `GET` | `/api/history` | Histórico de consultas |
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `GET` | `/` | Autenticado | Interface web (SPA) |
+| `GET` | `/login` | Público | Tela de login |
+| `GET` | `/api/tables` | Autenticado | Listar tabelas com schema e contagem |
+| `GET` | `/api/tables/{name}/preview` | Autenticado | Preview de uma tabela (até 100 linhas) |
+| `DELETE` | `/api/tables/{name}` | Admin | Excluir tabela (DROP TABLE) |
+| `POST` | `/api/upload` | Autenticado | Upload de arquivo Excel (.xlsx) |
+| `POST` | `/api/query` | Autenticado | Consulta em linguagem natural |
+| `GET` | `/api/history` | Autenticado | Histórico de consultas |
 
 ### Análise e Visualização
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `POST` | `/api/explore` | Gerar página PyGWalker (exploração interativa) |
-| `POST` | `/api/chart` | Gerar gráfico Chart.js via recomendação LLM |
-| `POST` | `/api/analytics` | Dashboard de análise estatística descritiva |
-| `POST` | `/api/analytics/predict` | Executar modelo preditivo (linear/logistic/clustering) |
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `POST` | `/api/explore` | Autenticado | Gerar página PyGWalker |
+| `POST` | `/api/chart` | Autenticado | Gerar gráfico Chart.js via LLM |
+| `POST` | `/api/analytics` | Autenticado | Dashboard estatístico descritivo |
+| `POST` | `/api/analytics/predict` | Autenticado | Modelo preditivo (linear/logistic/clustering) |
 
 ### Galeria e Exportação
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/gallery` | Listar itens da galeria |
-| `POST` | `/api/gallery` | Salvar visualização na galeria |
-| `DELETE` | `/api/gallery/{id}` | Excluir item da galeria |
-| `GET` | `/api/gallery/{token}/view` | Visualizar item público via token |
-| `POST` | `/api/export/excel` | Exportar dados para .xlsx |
-| `POST` | `/api/email` | Enviar resultados por email |
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/gallery` | Autenticado | Listar itens da galeria |
+| `POST` | `/api/gallery` | Autenticado | Salvar visualização na galeria |
+| `DELETE` | `/api/gallery/{id}` | Autenticado | Excluir item da galeria |
+| `GET` | `/api/gallery/{token}/view` | Público | Visualizar item público via token |
+| `POST` | `/api/export/excel` | Autenticado | Exportar dados para .xlsx |
+| `POST` | `/api/email` | Autenticado | Enviar resultados por email |
 
-### Configuração e Segurança
+### Configuração e API Externa
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/analysis-types` | Listar tipos de análise |
-| `POST` | `/api/analysis-types` | Criar tipo de análise |
-| `PUT` | `/api/analysis-types/{id}` | Atualizar tipo de análise |
-| `DELETE` | `/api/analysis-types/{id}` | Excluir tipo de análise |
-| `POST` | `/api/keys` | Gerar nova API key |
-| `GET` | `/api/keys` | Listar API keys |
-| `POST` | `/api/v1/query` | Endpoint externo (autenticado via X-API-Key) |
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/analysis-types` | Autenticado | Listar tipos de análise |
+| `GET` | `/api/analysis-types/{id}` | Autenticado | Obter tipo de análise específico |
+| `POST` | `/api/analysis-types` | Autenticado | Criar tipo de análise |
+| `PUT` | `/api/analysis-types/{id}` | Autenticado | Atualizar tipo de análise |
+| `DELETE` | `/api/analysis-types/{id}` | Autenticado | Excluir tipo de análise |
+| `POST` | `/api/keys` | Autenticado | Gerar nova API key |
+| `GET` | `/api/keys` | Autenticado | Listar API keys |
+| `POST` | `/api/v1/query` | API Key | Endpoint externo (autenticado via X-API-Key) |
+
+---
+
+## Autenticação — Detalhamento Técnico
+
+### Middleware HTTP
+
+Todas as requisições passam pelo middleware `auth_middleware` em `main.py`. Rotas públicas (login, auth/check, auth/login, static, gallery view, API v1) são liberadas. Demais rotas exigem cookie de sessão válido — requisições de página redirecionam para `/login`, requisições de API retornam HTTP 401.
+
+### Sessões
+
+Token gerado via `secrets.token_urlsafe(48)`. Armazenado na tabela `sessions` com `user_id` e `expires_at`. Cookie `qi_session` com flags `httponly`, `samesite=lax`, `max_age=86400` (24h). Sessões expiradas são limpas automaticamente a cada novo login.
+
+### Primeiro Acesso
+
+A função `authenticate_user()` verifica se a tabela `users` tem 0 registros. Se sim, cria o usuário com as credenciais fornecidas como `admin` com display_name "Super Usuário" e descrição automática. A tela de login detecta essa condição via `/api/auth/check` e exibe aviso informativo.
+
+### Hierarquia de Permissões
+
+A dependency `require_admin` em FastAPI bloqueia endpoints de gestão para usuários comuns. O frontend oculta a aba "Usuários" e botões de exclusão de tabelas para quem não é administrador. Proteções adicionais no backend: ninguém pode excluir a si mesmo.
 
 ---
 
@@ -244,11 +336,11 @@ Todas as variáveis categóricas (features e target) são automaticamente conver
 
 ### Regressão Linear
 
-Modelo: `sklearn.linear_model.LinearRegression`. Split train/test: 80/20 (≥50 registros) ou 70/30 (< 50 registros). Métricas de regressão: R², R² Ajustado (corrigido por número de features), MAE, MSE, RMSE, MAPE, Variância Explicada. Métricas de classificação derivadas: binarização na mediana do target (acima/abaixo), com probabilidade proxy normalizada pela amplitude de predição.
+Modelo: `sklearn.linear_model.LinearRegression`. Split train/test: 80/20 (≥50 registros) ou 70/30 (< 50 registros). Métricas de regressão: R², R² Ajustado (corrigido por número de features), MAE, MSE, RMSE, MAPE, Variância Explicada. Métricas de classificação derivadas: binarização na mediana do target (acima/abaixo), com probabilidade proxy normalizada pela amplitude de predição. Tabela de coeficientes com S.E. via `(XᵀX)⁻¹ · MSE`, estatística t, p-value bilateral e IC 95%.
 
 ### Regressão Logística
 
-Modelo: `sklearn.linear_model.LogisticRegression` com solver `lbfgs`, `max_iter=5000`. Sem restrição de classes — aceita qualquer quantidade de valores únicos no target. Fallback para solver `saga` com StandardScaler se `lbfgs` falhar (tipicamente em datasets com muitas classes ou features mal escaladas). Para multiclass, precision/recall/F1 usam `average="weighted"`. AUC-ROC usa `multi_class="ovr"` com `average="weighted"`. KS (Kolmogorov-Smirnov) disponível apenas para classificação binária — compara distribuições de probabilidade das classes positiva e negativa via `scipy.stats.ks_2samp`.
+Modelo: `sklearn.linear_model.LogisticRegression` com solver `lbfgs`, `max_iter=5000`. Sem restrição de classes — aceita qualquer quantidade de valores únicos no target. Fallback para solver `saga` com StandardScaler se `lbfgs` falhar (tipicamente em datasets com muitas classes ou features mal escaladas). Para multiclass, precision/recall/F1 usam `average="weighted"`. AUC-ROC usa `multi_class="ovr"` com `average="weighted"`. KS (Kolmogorov-Smirnov) disponível apenas para classificação binária — compara distribuições de probabilidade das classes positiva e negativa via `scipy.stats.ks_2samp`. Tabela de coeficientes com S.E. via Fisher Information Matrix, Wald χ², p-value e IC 95% para Exp(B).
 
 ### Clusterização K-Means
 
@@ -285,6 +377,7 @@ pip install -r requirements.txt
 ```env
 OPENAI_API_KEY=sk-sua-chave-aqui
 OPENAI_MODEL=gpt-4.1
+SESSION_SECRET=minha-chave-secreta-de-sessao
 ```
 
 ### 4. Execute
@@ -293,7 +386,7 @@ OPENAI_MODEL=gpt-4.1
 python run.py
 ```
 
-Acesse **http://localhost:8000**
+Acesse **http://localhost:8000** — será redirecionado para a tela de login. No primeiro acesso, as credenciais informadas criam automaticamente a conta administrador.
 
 ---
 
@@ -304,8 +397,9 @@ Acesse **http://localhost:8000**
 | `OPENAI_API_KEY` | Sim | — | Chave da API OpenAI |
 | `OPENAI_MODEL` | Não | `gpt-4.1` | Modelo LLM utilizado pelo agente |
 | `DATABASE_URL` | Não | `sqlite:///data/quick_insights.db` | Connection string do banco |
-| `API_SALT` | Não | `default-salt` | Salt para hash SHA256 das API keys |
+| `API_SALT` | Não | `default-salt` | Salt para hash SHA256 (senhas e API keys) |
 | `API_SECRET_KEY` | Não | `default-secret` | Chave secreta da aplicação |
+| `SESSION_SECRET` | Não | `qi-session-secret-change-me` | Secret para gestão de sessões |
 | `EMAIL_ADDRESS` | Não | — | Email Outlook para envio de resultados |
 | `EMAIL_PASSWORD` | Não | — | Senha ou app password do email |
 | `EMAIL_SERVER` | Não | `outlook.office365.com` | Servidor Exchange |
@@ -317,6 +411,10 @@ Acesse **http://localhost:8000**
 ## Schema do Banco de Dados
 
 O SQLite armazena tanto os dados do usuário (tabelas criadas via upload de Excel) quanto as tabelas internas de metadados:
+
+**`users`** — contas de usuário com login, password_hash (SHA256+salt), user_type (superuser/admin/user), display_name, profile_description, is_active e timestamps.
+
+**`sessions`** — sessões ativas com token, user_id e expires_at. Sessões expiradas são removidas automaticamente.
 
 **`analysis_types`** — tipos de análise customizados com system prompt, guardrails de entrada e saída.
 
