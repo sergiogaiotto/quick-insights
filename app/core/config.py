@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     api_secret_key: str = os.getenv("API_SECRET_KEY", "default-secret")
     session_secret: str = os.getenv("SESSION_SECRET", "qi-session-secret-change-me")
 
+    # LangSmith
+    langchain_tracing_v2: str = os.getenv("LANGCHAIN_TRACING_V2", "false")
+    langchain_api_key: str = os.getenv("LANGCHAIN_API_KEY", "")
+    langchain_project: str = os.getenv("LANGCHAIN_PROJECT", "quick-insights")
+
     # Server
     host: str = os.getenv("HOST", "0.0.0.0")
     port: int = int(os.getenv("PORT", "8000"))
