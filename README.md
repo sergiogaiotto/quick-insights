@@ -400,6 +400,9 @@ Acesse **http://localhost:8000** — será redirecionado para a tela de login. N
 | `API_SALT` | Não | `default-salt` | Salt para hash SHA256 (senhas e API keys) |
 | `API_SECRET_KEY` | Não | `default-secret` | Chave secreta da aplicação |
 | `SESSION_SECRET` | Não | `qi-session-secret-change-me` | Secret para gestão de sessões |
+| `LANGCHAIN_TRACING_V2` | Não | `false` | Ativar tracing LangSmith (`true` para habilitar) |
+| `LANGCHAIN_API_KEY` | Não | — | Chave da API LangSmith |
+| `LANGCHAIN_PROJECT` | Não | `quick-insights` | Nome do projeto no LangSmith |
 | `HOST` | Não | `0.0.0.0` | Host do servidor |
 | `PORT` | Não | `8000` | Porta do servidor |
 
