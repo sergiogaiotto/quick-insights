@@ -10,8 +10,13 @@ from app.models.schemas import (
     QueryRequest, AnalysisTypeCreate, AnalysisTypeUpdate,
     EmailRequest, ApiKeyCreate, ApiQueryRequest, GallerySaveRequest, PredictionRequest,
     LoginRequest, UserCreate, UserUpdate, PasswordChange,
+    SkillCreate, SkillUpdate,
 )
-from app.core.database import get_sync_connection, get_all_tables, execute_readonly_sql
+from app.core.database import (
+    get_sync_connection, get_all_tables, execute_readonly_sql,
+    get_all_skills, get_active_skills, get_skill_by_id,
+    create_skill as db_create_skill, update_skill as db_update_skill, delete_skill as db_delete_skill,
+)
 from app.core.security import (
     validate_api_key, create_api_key,
     authenticate_user, create_session, validate_session, destroy_session,
@@ -394,6 +399,67 @@ async def list_keys():
         return [dict(row) for row in cursor.fetchall()]
     finally:
         conn.close()
+
+
+# --- Custom Skills ---
+
+@router.get("/skills")
+async def list_skills():
+    return get_all_skills()
+
+
+@router.get("/skills/active")
+async def list_active_skills():
+    return get_active_skills()
+
+
+@router.post("/skills")
+async def create_skill_route(req: SkillCreate, request: Request):
+    user = getattr(request.state, "user", None)
+    created_by = user["login"] if user else ""
+    try:
+        return db_create_skill(
+            name=req.name, description=req.description,
+            content=req.content, created_by=created_by,
+        )
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+
+@router.get("/skills/{skill_id}")
+async def get_skill_route(skill_id: int):
+    skill = get_skill_by_id(skill_id)
+    if not skill:
+        raise HTTPException(404, "Skill não encontrada")
+    return skill
+
+
+@router.put("/skills/{skill_id}")
+async def update_skill_route(skill_id: int, req: SkillUpdate):
+    skill = get_skill_by_id(skill_id)
+    if not skill:
+        raise HTTPException(404, "Skill não encontrada")
+    db_update_skill(skill_id, **req.model_dump(exclude_none=True))
+    return {"success": True}
+
+
+@router.put("/skills/{skill_id}/toggle")
+async def toggle_skill(skill_id: int):
+    skill = get_skill_by_id(skill_id)
+    if not skill:
+        raise HTTPException(404, "Skill não encontrada")
+    new_state = 0 if skill["is_active"] else 1
+    db_update_skill(skill_id, is_active=new_state)
+    return {"success": True, "is_active": new_state}
+
+
+@router.delete("/skills/{skill_id}")
+async def delete_skill_route(skill_id: int):
+    skill = get_skill_by_id(skill_id)
+    if not skill:
+        raise HTTPException(404, "Skill não encontrada")
+    db_delete_skill(skill_id)
+    return {"success": True}
 
 
 # --- External API (with API Key auth) ---
