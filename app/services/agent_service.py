@@ -38,6 +38,7 @@ class AgentState(TypedDict):
     sql_query: str
     query_result: dict
     analysis_type_id: int | None
+    skill_ids: list[int] | None
 
 
 # ---------------------------------------------------------------------------
@@ -63,27 +64,59 @@ def _load_skill(skill_name: str) -> str:
 def _get_skills_summary() -> str:
     """Get a summary of available skills for the agent context."""
     skills_dir = settings.skills_dir
-    if not skills_dir.exists():
-        return ""
-
     summaries = []
-    for skill_dir in sorted(skills_dir.iterdir()):
-        skill_md = skill_dir / "SKILL.md"
-        if skill_md.exists():
-            content = skill_md.read_text(encoding="utf-8")
-            # Extract name and description from frontmatter
-            lines = content.split("\n")
-            name = skill_dir.name
-            description = ""
-            for line in lines:
-                if line.startswith("description:"):
-                    description = line.split(":", 1)[1].strip()
-                    break
-            summaries.append(f"- **{name}**: {description}")
+
+    # Built-in skills from filesystem
+    if skills_dir.exists():
+        for skill_dir in sorted(skills_dir.iterdir()):
+            skill_md = skill_dir / "SKILL.md"
+            if skill_md.exists():
+                content = skill_md.read_text(encoding="utf-8")
+                lines = content.split("\n")
+                name = skill_dir.name
+                description = ""
+                for line in lines:
+                    if line.startswith("description:"):
+                        description = line.split(":", 1)[1].strip()
+                        break
+                summaries.append(f"- **{name}**: {description}")
 
     if summaries:
         return "## Available Skills\n" + "\n".join(summaries)
     return ""
+
+
+def _get_custom_skills_context(skill_ids: list[int] | None = None) -> str:
+    """Load custom skills from DB and format them as context blocks.
+
+    If skill_ids is provided, load only those specific skills (regardless of is_active).
+    Otherwise, load all active skills.
+    """
+    try:
+        from app.core.database import get_active_skills, get_skill_by_id
+        if skill_ids:
+            skills = [s for sid in skill_ids if (s := get_skill_by_id(sid))]
+        else:
+            skills = get_active_skills()
+    except Exception:
+        return ""
+
+    if not skills:
+        return ""
+
+    parts = ["## Custom Skills (aplicadas)"]
+    parts.append("As skills abaixo foram selecionadas para expandir sua capacidade de análise.")
+    parts.append("Aplique o conhecimento e as instruções de cada skill ao responder.\n")
+
+    for s in skills:
+        parts.append(f"### Skill: {s['name']}")
+        if s.get("description"):
+            parts.append(f"*{s['description']}*\n")
+        if s.get("content"):
+            parts.append(s["content"])
+        parts.append("")
+
+    return "\n".join(parts)
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +197,7 @@ def build_agent():
     def agent_node(state: AgentState):
         config = _get_analysis_config(state.get("analysis_type_id"))
         schema_text = get_table_schema_text()
+        custom_skills = _get_custom_skills_context(state.get("skill_ids"))
 
         system_content = f"""{config['system_prompt']}
 
@@ -177,6 +211,8 @@ def build_agent():
 
 ## Skill: Schema Exploration
 {schema_skill}
+
+{custom_skills}
 
 ## Current Database Schema
 {schema_text}
@@ -267,6 +303,7 @@ async def run_query(
     context: str | None = None,
     result_limit: int | None = 20,
     user_login: str = "",
+    skill_ids: list[int] | None = None,
 ) -> dict:
     """Run a natural language query through the Deep Agent."""
     agent = get_agent()
@@ -277,13 +314,25 @@ async def run_query(
         messages.append(AIMessage(content="Entendido, vou considerar o contexto anterior."))
     messages.append(HumanMessage(content=question))
 
-    # LangSmith metadata — user_login appears in trace
-    run_config = {
-        "metadata": {
-            "user": user_login or "anonymous",
-        },
-        "tags": [f"user:{user_login}"] if user_login else [],
-    }
+    # Langfuse tracing — user_login appears in trace
+    run_config = {}
+    if settings.langfuse_secret_key and settings.langfuse_public_key:
+        try:
+            import importlib
+            _lf_mod = importlib.import_module("langfuse.callback")
+            LangfuseHandler = getattr(_lf_mod, "CallbackHandler")
+            langfuse_handler = LangfuseHandler(
+                secret_key=settings.langfuse_secret_key,
+                public_key=settings.langfuse_public_key,
+                host=settings.langfuse_host,
+                user_id=user_login or "anonymous",
+                session_id=f"qi-{user_login}" if user_login else None,
+                tags=[f"user:{user_login}"] if user_login else [],
+                metadata={"source": "quick-insights"},
+            )
+            run_config["callbacks"] = [langfuse_handler]
+        except Exception:
+            pass  # langfuse not installed or misconfigured, skip tracing
 
     result = agent.invoke(
         {
@@ -291,6 +340,7 @@ async def run_query(
             "sql_query": "",
             "query_result": {},
             "analysis_type_id": analysis_type_id,
+            "skill_ids": skill_ids,
         },
         config=run_config,
     )
