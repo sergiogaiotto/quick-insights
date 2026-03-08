@@ -89,3 +89,18 @@ class UserUpdate(BaseModel):
 
 class PasswordChange(BaseModel):
     new_password: str = Field(..., min_length=3)
+
+
+# --- Skills ---
+
+class SkillCreate(BaseModel):
+    name: str = Field(..., min_length=2)
+    description: str = ""
+    content: str = ""
+
+
+class SkillUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    content: Optional[str] = None
+    is_active: Optional[int] = None
