@@ -12,6 +12,7 @@ Architecture based on deepagents/examples/text-to-sql-agent:
 from typing import Annotated, TypedDict
 from pathlib import Path
 
+from duckdb import HTTPException
 from langchain_openai import ChatOpenAI
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langchain_community.utilities import SQLDatabase
@@ -318,20 +319,39 @@ async def run_query(
     run_config = {}
     if settings.langfuse_secret_key and settings.langfuse_public_key:
         try:
-            import importlib
-            _lf_mod = importlib.import_module("langfuse.callback")
-            LangfuseHandler = getattr(_lf_mod, "CallbackHandler")
-            langfuse_handler = LangfuseHandler(
-                secret_key=settings.langfuse_secret_key,
+
+            from langfuse import Langfuse
+            from langfuse.langchain import CallbackHandler
+            Langfuse(
                 public_key=settings.langfuse_public_key,
+                secret_key=settings.langfuse_secret_key,
                 host=settings.langfuse_host,
-                user_id=user_login or "anonymous",
-                session_id=f"qi-{user_login}" if user_login else None,
-                tags=[f"user:{user_login}"] if user_login else [],
-                metadata={"source": "quick-insights"},
             )
-            run_config["callbacks"] = [langfuse_handler]
-        except Exception:
+            langfuse_handler = CallbackHandler()
+            run_config = {
+                "callbacks": [langfuse_handler],
+                "metadata": {
+                    "langfuse_user_id": user_login or "anonymous",
+                    "langfuse_session_id": f"qi-{user_login}" if user_login else None,
+                    "langfuse_tags": [f"user:{user_login}"] if user_login else [],
+                    "source": "quick-insights",
+                },
+            }
+
+#            import importlib
+#            _lf_mod = importlib.import_module("langfuse.langchain")
+#            LangfuseHandler = getattr(_lf_mod, "CallbackHandler")
+#            langfuse_handler = LangfuseHandler(
+#                secret_key=settings.langfuse_secret_key,
+#                public_key=settings.langfuse_public_key,
+#                host=settings.langfuse_host,
+#                user_id=user_login or "anonymous",
+#                session_id=f"qi-{user_login}" if user_login else None,
+#                tags=[f"user:{user_login}"] if user_login else [],
+#                metadata={"source": "quick-insights"},
+#            )
+#            run_config["callbacks"] = [langfuse_handler]
+        except Exception as e:
             pass  # langfuse not installed or misconfigured, skip tracing
 
     result = agent.invoke(
