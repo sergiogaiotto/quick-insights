@@ -38,3 +38,6 @@ langfuse>=2.0.0
 
 # CLI & Utilities
 rich>=13.0.0
+
+# Logging
+logger>=0.1.0
