@@ -88,6 +88,32 @@
         .prose-custom strong { color: #e6edf3; }
         .prose-custom code { background: #21262d; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.85em; }
 
+        /* Clickable suggestion links */
+        .qi-suggestion-link {
+            color: #58a6ff;
+            text-decoration: none;
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(88,166,255,0.3);
+            transition: all 0.15s;
+        }
+        .qi-suggestion-link:hover {
+            color: #ff6347;
+            border-bottom-color: rgba(255,99,71,0.4);
+        }
+        .qi-suggestion-icon {
+            font-size: 9px;
+            color: #58a6ff;
+            opacity: 0.5;
+            transition: opacity 0.15s;
+            vertical-align: middle;
+        }
+        .qi-suggestion-link:hover .qi-suggestion-icon,
+        li:hover .qi-suggestion-icon,
+        p:hover .qi-suggestion-icon {
+            opacity: 1;
+            color: #ff6347;
+        }
+
         /* Drop zone */
         .drop-active { border-color: #ff6347 !important; background: rgba(255, 99, 71, 0.04); }
     </style>
@@ -109,6 +135,7 @@
         <nav class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium">
             <button onclick="showTab('query')" id="tab-query" class="tab-btn tab-active transition-colors">Consultar</button>
             <button onclick="showTab('tables')" id="tab-tables" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Tabelas</button>
+            <button onclick="showTab('skills')" id="tab-skills" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Skills</button>
             <button onclick="showTab('gallery')" id="tab-gallery" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Galeria</button>
             <button onclick="showTab('config')" id="tab-config" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">Configurar</button>
             <button onclick="showTab('api')" id="tab-api" class="tab-btn text-fg-muted hover:text-fg-text transition-colors">API</button>
@@ -145,6 +172,12 @@
                 <option value="">Carregando...</option>
             </select>
         </div>
+        <div id="activeSkillsBadge" class="hidden self-end">
+            <div class="flex items-center gap-1.5 bg-fg-blue/10 border border-fg-blue/20 rounded-lg px-3 py-2 cursor-pointer hover:bg-fg-blue/15 transition" onclick="showTab('skills')" title="Skills ativas — clique para gerenciar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-fg-blue"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                <span class="text-xs text-fg-blue font-medium" id="activeSkillsCount">0 skills</span>
+            </div>
+        </div>
     </div>
 
     <!-- Suggestions -->
@@ -155,6 +188,46 @@
         <button onclick="useSuggestion(this)" class="text-xs bg-fg-700 border border-fg-border rounded-full px-3 py-1.5 hover:border-fg-accent hover:text-fg-accent transition-all">Qual o total por categoria?</button>
         <button onclick="useSuggestion(this)" class="text-xs bg-fg-700 border border-fg-border rounded-full px-3 py-1.5 hover:border-fg-accent hover:text-fg-accent transition-all">Quais são os padrões dos dados?</button>
     </div>
+
+    <!-- Comparação Período a Período -->
+    <div id="comparePanel" class="hidden mb-4 bg-fg-700/50 border border-fg-border rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-fg-blue uppercase tracking-wider flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                Comparação Período a Período
+            </h3>
+            <button onclick="toggleComparePanel()" class="text-xs text-fg-muted hover:text-red-400 transition">Fechar</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div>
+                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Granularidade</label>
+                <select id="compareGranularity" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs focus:border-fg-blue focus:outline-none">
+                    <option value="mes">Mês</option>
+                    <option value="ano">Ano</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Período 1</label>
+                <input id="comparePeriod1" type="text" placeholder="ex: 2024-01" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs font-mono focus:border-fg-blue focus:outline-none">
+            </div>
+            <div>
+                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Período 2</label>
+                <input id="comparePeriod2" type="text" placeholder="ex: 2025-01" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs font-mono focus:border-fg-blue focus:outline-none">
+            </div>
+            <div>
+                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Métrica (opcional)</label>
+                <input id="compareMetric" type="text" placeholder="ex: vendas, receita" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs focus:border-fg-blue focus:outline-none">
+            </div>
+            <div class="flex items-end">
+                <button onclick="runComparison()" class="w-full bg-fg-blue hover:opacity-90 text-white px-4 py-2 rounded-lg text-xs font-semibold transition">
+                    Comparar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selected Skills Badge -->
+    <div id="selectedSkillsBadge" class="hidden mb-3"></div>
 
     <!-- Chat area -->
     <div id="chatArea" class="bg-fg-800 rounded-xl border border-fg-border min-h-[320px] max-h-[62vh] overflow-y-auto p-5 mb-4 space-y-4 glow-accent">
@@ -237,6 +310,71 @@
                 <button onclick="document.getElementById('tablePreview').classList.add('hidden')" class="text-xs text-fg-muted hover:text-red-400 transition">Fechar</button>
             </div>
             <div id="previewContent" class="table-container"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== SKILLS TAB ===================== -->
+<section id="panel-skills" class="tab-panel hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Skill Editor -->
+        <div class="lg:col-span-2">
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Editor de Skill</h2>
+                    <button onclick="newSkill()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                        Nova Skill
+                    </button>
+                </div>
+                <input type="hidden" id="skillEditId">
+                <div class="space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome</label>
+                            <input id="skillName" type="text" placeholder="ex: analise-financeira" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Descrição curta</label>
+                            <input id="skillDesc" type="text" placeholder="Quando e para que usar esta skill" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Conteúdo da Skill (Markdown)</label>
+                        <textarea id="skillContent" rows="18" placeholder="# Instruções para o agente&#10;&#10;Descreva aqui o conhecimento especializado, regras de interpretação, exemplos de análise, métricas relevantes, formato de resposta, etc.&#10;&#10;O agente usará este conteúdo como contexto adicional ao responder consultas enquanto a skill estiver ativa." class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none resize-y leading-relaxed"></textarea>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="saveSkill()" class="bg-fg-green hover:opacity-90 text-fg-900 px-4 py-1.5 rounded-lg text-xs font-semibold transition">Salvar</button>
+                        <button onclick="newSkill()" class="bg-fg-500 text-fg-muted px-4 py-1.5 rounded-lg text-xs transition hover:text-fg-text">Limpar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help -->
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5 mt-6">
+                <h3 class="text-xs font-bold text-fg-blue uppercase tracking-wider mb-3">Como criar Skills</h3>
+                <div class="text-xs text-fg-muted space-y-2 leading-relaxed">
+                    <p>Skills expandem a capacidade do agente ao responder consultas. Cada skill ativa é injetada no contexto do Deep Agent como conhecimento especializado.</p>
+                    <p class="text-fg-text font-medium">Exemplos de uso:</p>
+                    <p><span class="text-fg-green font-mono">Análise Financeira</span> — regras para interpretar DRE, balanço patrimonial, indicadores de liquidez, rentabilidade. O agente passa a calcular e explicar índices financeiros automaticamente.</p>
+                    <p><span class="text-fg-green font-mono">Segmentação RFM</span> — instruções para calcular Recência, Frequência e Valor Monetário a partir de dados transacionais, classificar clientes e gerar recomendações.</p>
+                    <p><span class="text-fg-green font-mono">Análise de Churn</span> — métricas de retenção, cohort analysis, indicadores preditivos, formato de relatório com ações recomendadas.</p>
+                    <p><span class="text-fg-green font-mono">KPI Dashboard</span> — definição de KPIs específicos do negócio, fórmulas de cálculo, metas, semáforos de performance.</p>
+                    <p class="text-fg-text mt-2">Use Markdown no conteúdo: cabeçalhos, listas, exemplos, fórmulas. Quanto mais contexto e exemplos, melhor a interpretação do agente.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills List -->
+        <div class="lg:col-span-1">
+            <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Skills Cadastradas</h2>
+                    <button onclick="loadSkills()" class="text-xs text-fg-muted hover:text-fg-accent transition">Atualizar</button>
+                </div>
+                <div id="skillsList" class="space-y-2">
+                    <p class="text-xs text-fg-muted">Carregando...</p>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -458,6 +596,8 @@
 let conversationContext = '';
 let lastQueryData = null;
 let lastQuestion = '';
+let selectedSkillIds = [];
+let allSkillsList = [];
 
 // ============================
 // Tabs
@@ -478,6 +618,7 @@ function showTab(name) {
     if (name === 'gallery') loadGallery();
     if (name === 'api') loadApiKeys();
     if (name === 'users') loadUsers();
+    if (name === 'skills') loadSkills();
 }
 
 // ============================
@@ -486,6 +627,106 @@ function showTab(name) {
 function useSuggestion(btn) {
     document.getElementById('queryInput').value = btn.textContent;
     sendQuery();
+}
+
+// ============================
+// Comparison (Peer-to-Peer)
+// ============================
+function toggleComparePanel() {
+    const panel = document.getElementById('comparePanel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+        document.getElementById('comparePeriod1').focus();
+    }
+}
+
+function runComparison() {
+    const granularity = document.getElementById('compareGranularity').value;
+    const p1 = document.getElementById('comparePeriod1').value.trim();
+    const p2 = document.getElementById('comparePeriod2').value.trim();
+    const metric = document.getElementById('compareMetric').value.trim();
+    if (!p1 || !p2) { alert('Informe os dois períodos.'); return; }
+
+    const granLabel = granularity === 'ano' ? 'ano' : 'mês';
+    let q = `Compare os resultados do ${granLabel} ${p1} com o ${granLabel} ${p2}`;
+    if (metric) q += `, focando na métrica "${metric}"`;
+    q += `. Apresente a variação absoluta e percentual entre os períodos, destaque os principais desvios e proponha novas análises de aprofundamento.`;
+
+    document.getElementById('comparePanel').classList.add('hidden');
+    document.getElementById('queryInput').value = q;
+    sendQuery();
+}
+
+// ============================
+// Clickable Suggestions in Responses
+// ============================
+function linkifySuggestions(html) {
+    // Convert numbered suggestions (1. / 2. / etc) and bullet items into clickable links
+    // Targets <li> contents that look like analysis proposals
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+
+    const items = tmp.querySelectorAll('li');
+    items.forEach(li => {
+        const text = li.textContent.trim();
+        // Skip very short items, code blocks, or items that already have links
+        if (text.length < 15 || li.querySelector('a, code, pre') || li.querySelector('.qi-suggestion-link')) return;
+
+        // Detect suggestion patterns (analysis proposals, questions, recommendations)
+        const isSuggestion = /^(analis|verific|compar|investig|identific|calcul|avali|monitor|segmentar|classific|estud|explor|mapear|cruzar|detalh|aprofund|agrupar|filtrar|correlacion|rankear|listar|mostrar|descobrir|qual|quais|como|por que|quanto|onde)/i.test(text)
+            || /\?$/.test(text)
+            || /^(faça|execute|gere|crie|realize|extraia|consulte|busque|determine)/i.test(text);
+
+        if (isSuggestion) {
+            // Preserve the original innerHTML but wrap the text content in a clickable element
+            const link = document.createElement('a');
+            link.href = '#';
+            link.className = 'qi-suggestion-link';
+            link.title = 'Clique para executar esta análise';
+            link.setAttribute('onclick', `event.preventDefault(); runSuggestion(this.dataset.q)`);
+            link.dataset.q = text;
+            link.innerHTML = li.innerHTML + ' <span class="qi-suggestion-icon">▶</span>';
+            li.innerHTML = '';
+            li.appendChild(link);
+        }
+    });
+
+    // Also handle standalone paragraphs that look like suggestions (common in numbered format without <li>)
+    const paras = tmp.querySelectorAll('p');
+    paras.forEach(p => {
+        const text = p.textContent.trim();
+        // Match "1. ...", "2. ...", "- ..." at start of paragraph
+        const match = text.match(/^(\d+[\.\)]\s*)(.+)/);
+        if (match && match[2].length > 15) {
+            const proposal = match[2];
+            const isSuggestion = /^(analis|verific|compar|investig|identific|calcul|avali|monitor|segmentar|classific|estud|explor|mapear|cruzar|detalh|aprofund|agrupar|filtrar|correlacion|rankear|listar|mostrar|descobrir|qual|quais|como|por que|quanto|onde|faça|execute|gere|crie|realize|extraia|consulte|busque|determine)/i.test(proposal);
+            if (isSuggestion) {
+                const prefix = match[1];
+                const link = document.createElement('a');
+                link.href = '#';
+                link.className = 'qi-suggestion-link';
+                link.title = 'Clique para executar esta análise';
+                link.setAttribute('onclick', `event.preventDefault(); runSuggestion(this.dataset.q)`);
+                link.dataset.q = proposal;
+                link.textContent = proposal;
+                p.innerHTML = prefix;
+                p.appendChild(link);
+                const icon = document.createElement('span');
+                icon.className = 'qi-suggestion-icon';
+                icon.textContent = ' ▶';
+                p.appendChild(icon);
+            }
+        }
+    });
+
+    return tmp.innerHTML;
+}
+
+function runSuggestion(text) {
+    document.getElementById('queryInput').value = text;
+    sendQuery();
+    // Scroll to input area
+    document.getElementById('queryInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function sendQuery() {
@@ -509,6 +750,7 @@ async function sendQuery() {
                 analysis_type_id: analysisTypeId ? parseInt(analysisTypeId) : null,
                 conversation_context: conversationContext || null,
                 result_limit: parseInt(document.getElementById('resultLimit').value) || 0,
+                skill_ids: selectedSkillIds.length > 0 ? selectedSkillIds : null,
             }),
         });
         const data = await res.json();
@@ -527,7 +769,9 @@ async function sendQuery() {
             html += `<details class="mb-3 group"><summary class="text-[10px] text-fg-muted cursor-pointer hover:text-fg-accent transition uppercase tracking-wider font-mono">SQL Gerado</summary><pre class="mt-2 bg-fg-900 rounded-lg p-3 text-[11px] text-fg-green overflow-x-auto font-mono border border-fg-border leading-relaxed">${escapeHtml(data.sql_generated)}</pre></details>`;
         }
         if (data.explanation) {
-            html += `<div class="prose-custom text-sm leading-relaxed">${marked.parse(data.explanation)}</div>`;
+            let parsed = marked.parse(data.explanation);
+            parsed = linkifySuggestions(parsed);
+            html += `<div class="prose-custom text-sm leading-relaxed">${parsed}</div>`;
         }
         if (data.data && data.data.rows && data.data.rows.length > 0) {
             html += renderTable(data.data);
@@ -562,13 +806,18 @@ function renderTable(data) {
 }
 
 function renderActions() {
+    const skillBadge = selectedSkillIds.length > 0
+        ? `<span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-400 text-[9px] text-white font-bold ml-1">${selectedSkillIds.length}</span>`
+        : '';
     return `
         <div class="flex flex-wrap gap-2 mt-3">
             <button onclick="openChart()" class="text-xs bg-fg-accent/15 text-fg-accent border border-fg-accent/25 px-3 py-1.5 rounded-lg hover:bg-fg-accent/25 transition font-medium">Gráfico</button>
             <button onclick="openExplore()" class="text-xs bg-purple-500/15 text-purple-400 border border-purple-500/25 px-3 py-1.5 rounded-lg hover:bg-purple-500/25 transition font-medium">Explorar</button>
             <button onclick="openAnalytics()" class="text-xs bg-amber-500/15 text-amber-400 border border-amber-500/25 px-3 py-1.5 rounded-lg hover:bg-amber-500/25 transition font-medium">Análise Avançada</button>
+            <button onclick="toggleComparePanel()" class="text-xs bg-fg-blue/15 text-fg-blue border border-fg-blue/25 px-3 py-1.5 rounded-lg hover:bg-fg-blue/25 transition font-medium">Comparar Períodos</button>
+            <button onclick="openSkillSelector(this)" class="text-xs bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 px-3 py-1.5 rounded-lg hover:bg-indigo-500/25 transition font-medium">Skills${skillBadge}</button>
             <button onclick="exportExcel()" class="text-xs bg-fg-green/15 text-fg-green border border-fg-green/25 px-3 py-1.5 rounded-lg hover:bg-fg-green/25 transition font-medium">Exportar Excel</button>
-            <button onclick="openEmailModal()" class="text-xs bg-fg-blue/15 text-fg-blue border border-fg-blue/25 px-3 py-1.5 rounded-lg hover:bg-fg-blue/25 transition font-medium">Enviar Email</button>
+            <button onclick="openEmailModal()" class="text-xs bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 px-3 py-1.5 rounded-lg hover:bg-cyan-500/25 transition font-medium">Enviar Email</button>
         </div>`;
 }
 
@@ -1173,6 +1422,243 @@ function escapeHtml(s) {
 }
 
 // ============================
+// Skill Selector (per-query)
+// ============================
+async function openSkillSelector(triggerBtn) {
+    // Remove any existing selector panel
+    const existing = document.getElementById('skillSelectorPanel');
+    if (existing) { existing.remove(); return; }
+
+    // Fetch all skills
+    try {
+        const res = await fetch('/api/skills');
+        if (!res.ok) return;
+        allSkillsList = await res.json();
+    } catch(e) { return; }
+
+    if (!allSkillsList.length) {
+        alert('Nenhuma skill cadastrada. Crie skills na aba Skills.');
+        return;
+    }
+
+    // Find the parent actions div and insert the panel after it
+    const actionsDiv = triggerBtn.closest('.flex.flex-wrap');
+    const panel = document.createElement('div');
+    panel.id = 'skillSelectorPanel';
+    panel.className = 'mt-3 bg-fg-900 border border-indigo-500/30 rounded-xl p-4 fade-in';
+    panel.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                Skills para a próxima consulta
+            </h4>
+            <div class="flex gap-2">
+                <button onclick="clearSkillSelection()" class="text-[10px] text-fg-muted hover:text-fg-accent transition">Limpar</button>
+                <button onclick="document.getElementById('skillSelectorPanel').remove()" class="text-[10px] text-fg-muted hover:text-red-400 transition">Fechar</button>
+            </div>
+        </div>
+        <div class="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+            ${allSkillsList.map(s => {
+                const checked = selectedSkillIds.includes(s.id) ? 'checked' : '';
+                const activeTag = s.is_active
+                    ? '<span class="text-[9px] bg-fg-green/15 text-fg-green px-1.5 py-0.5 rounded-full">ON</span>'
+                    : '<span class="text-[9px] bg-fg-500/30 text-fg-muted px-1.5 py-0.5 rounded-full">OFF</span>';
+                return `
+                <label class="flex items-start gap-3 p-2.5 rounded-lg hover:bg-fg-700/50 cursor-pointer transition group">
+                    <input type="checkbox" value="${s.id}" ${checked}
+                           onchange="toggleSkillSelection(${s.id})"
+                           class="mt-0.5 accent-indigo-400 w-4 h-4 rounded cursor-pointer flex-shrink-0">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono font-bold text-indigo-300 group-hover:text-indigo-200 transition">${escapeHtml(s.name)}</span>
+                            ${activeTag}
+                        </div>
+                        <p class="text-[11px] text-fg-muted leading-relaxed mt-0.5 line-clamp-2">${escapeHtml(s.description || 'Sem descrição')}</p>
+                    </div>
+                </label>`;
+            }).join('')}
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-fg-border/50">
+            <span class="text-[10px] text-fg-muted" id="skillSelectionCount">${selectedSkillIds.length} skill(s) selecionada(s)</span>
+            <button onclick="document.getElementById('skillSelectorPanel').remove()" class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-lg hover:bg-indigo-500/30 transition font-medium">OK</button>
+        </div>
+    `;
+    actionsDiv.after(panel);
+}
+
+function toggleSkillSelection(id) {
+    const idx = selectedSkillIds.indexOf(id);
+    if (idx >= 0) {
+        selectedSkillIds.splice(idx, 1);
+    } else {
+        selectedSkillIds.push(id);
+    }
+    updateSkillSelectionUI();
+}
+
+function clearSkillSelection() {
+    selectedSkillIds = [];
+    // Uncheck all checkboxes in selector panel
+    const panel = document.getElementById('skillSelectorPanel');
+    if (panel) {
+        panel.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+    updateSkillSelectionUI();
+}
+
+function updateSkillSelectionUI() {
+    // Update count in selector panel
+    const countEl = document.getElementById('skillSelectionCount');
+    if (countEl) countEl.textContent = `${selectedSkillIds.length} skill(s) selecionada(s)`;
+
+    // Update badge near query input
+    const badge = document.getElementById('selectedSkillsBadge');
+    if (selectedSkillIds.length > 0) {
+        const names = selectedSkillIds.map(id => {
+            const s = allSkillsList.find(sk => sk.id === id);
+            return s ? s.name : `#${id}`;
+        });
+        badge.innerHTML = `
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400 flex-shrink-0"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                ${names.map(n => `<span class="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 px-1.5 py-0.5 rounded-full font-mono">${escapeHtml(n)}</span>`).join('')}
+                <button onclick="clearSkillSelection()" class="text-[10px] text-fg-muted hover:text-red-400 transition ml-1" title="Limpar seleção">✕</button>
+            </div>`;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+        badge.innerHTML = '';
+    }
+}
+
+// ============================
+// Custom Skills
+// ============================
+async function loadSkills() {
+    try {
+        const res = await fetch('/api/skills');
+        if (!res.ok) return;
+        const skills = await res.json();
+        const el = document.getElementById('skillsList');
+        if (!skills.length) {
+            el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma skill cadastrada. Crie a primeira usando o editor ao lado.</p>';
+            updateActiveSkillsBadge(0);
+            return;
+        }
+        const activeCount = skills.filter(s => s.is_active).length;
+        updateActiveSkillsBadge(activeCount);
+
+        el.innerHTML = skills.map(s => `
+            <div class="bg-fg-900 rounded-lg border border-fg-border p-3 hover:border-fg-accent/30 transition-all group">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-sm text-fg-green font-mono font-bold cursor-pointer hover:text-fg-accent transition" onclick="editSkill(${s.id})">${escapeHtml(s.name)}</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleSkillActive(${s.id})" class="text-[10px] font-semibold px-2 py-0.5 rounded-full transition ${s.is_active ? 'bg-fg-green/15 text-fg-green border border-fg-green/30' : 'bg-fg-500/30 text-fg-muted border border-fg-border'}" title="${s.is_active ? 'Ativa — clique para desativar' : 'Inativa — clique para ativar'}">
+                            ${s.is_active ? 'ON' : 'OFF'}
+                        </button>
+                        <button onclick="removeSkill(${s.id}, '${escapeHtml(s.name)}')" class="text-fg-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-[11px] text-fg-muted leading-relaxed line-clamp-2">${escapeHtml(s.description || '—')}</p>
+                <div class="flex items-center gap-2 mt-1.5 text-[10px] text-fg-muted">
+                    ${s.created_by ? '<span>por ' + escapeHtml(s.created_by) + '</span><span class="text-fg-border">·</span>' : ''}
+                    <span>${s.created_at ? s.created_at.slice(0,16).replace('T',' ') : ''}</span>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {
+        console.error('Erro ao carregar skills:', e);
+    }
+}
+
+function updateActiveSkillsBadge(count) {
+    const badge = document.getElementById('activeSkillsBadge');
+    const countEl = document.getElementById('activeSkillsCount');
+    if (count > 0) {
+        badge.classList.remove('hidden');
+        countEl.textContent = count + ' skill' + (count > 1 ? 's' : '');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+function newSkill() {
+    document.getElementById('skillEditId').value = '';
+    document.getElementById('skillName').value = '';
+    document.getElementById('skillDesc').value = '';
+    document.getElementById('skillContent').value = '';
+    document.getElementById('skillName').focus();
+}
+
+async function editSkill(id) {
+    try {
+        const res = await fetch(`/api/skills/${id}`);
+        if (!res.ok) return;
+        const s = await res.json();
+        document.getElementById('skillEditId').value = s.id;
+        document.getElementById('skillName').value = s.name;
+        document.getElementById('skillDesc').value = s.description || '';
+        document.getElementById('skillContent').value = s.content || '';
+        showTab('skills');
+    } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function saveSkill() {
+    const id = document.getElementById('skillEditId').value;
+    const name = document.getElementById('skillName').value.trim();
+    const description = document.getElementById('skillDesc').value.trim();
+    const content = document.getElementById('skillContent').value;
+    if (!name) { alert('Nome é obrigatório.'); return; }
+
+    try {
+        if (id) {
+            const res = await fetch(`/api/skills/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, description, content }),
+            });
+            if (!res.ok) { const e = await res.json(); alert(e.detail || 'Erro.'); return; }
+        } else {
+            const res = await fetch('/api/skills', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, description, content }),
+            });
+            if (!res.ok) { const e = await res.json(); alert(e.detail || 'Erro ao criar skill.'); return; }
+        }
+        newSkill();
+        loadSkills();
+    } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function toggleSkillActive(id) {
+    try {
+        await fetch(`/api/skills/${id}/toggle`, { method: 'PUT' });
+        loadSkills();
+    } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function removeSkill(id, name) {
+    if (!confirm(`Excluir a skill "${name}"?`)) return;
+    try {
+        await fetch(`/api/skills/${id}`, { method: 'DELETE' });
+        loadSkills();
+    } catch(e) { alert('Erro: ' + e.message); }
+}
+
+// Load active skills badge on init
+async function loadActiveSkillsBadge() {
+    try {
+        const res = await fetch('/api/skills/active');
+        if (!res.ok) return;
+        const skills = await res.json();
+        updateActiveSkillsBadge(skills.length);
+    } catch(e) { /* ignore */ }
+}
+
+// ============================
 // Auth & User Menu
 // ============================
 let currentUser = null;
@@ -1376,6 +1862,7 @@ async function removeUser(userId, login) {
 document.addEventListener('DOMContentLoaded', () => {
     loadCurrentUser();
     loadAnalysisTypeSelector();
+    loadActiveSkillsBadge();
 });
 </script>
 </body>
