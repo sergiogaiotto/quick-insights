@@ -43,6 +43,17 @@ def init_metadata_tables():
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS custom_skills (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT NOT NULL DEFAULT '',
+                content TEXT NOT NULL DEFAULT '',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_by TEXT NOT NULL DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE TABLE IF NOT EXISTS analysis_types (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE,
@@ -109,7 +120,7 @@ def init_metadata_tables():
 
 def get_all_tables() -> list[dict]:
     """List all user data tables (excluding internal metadata)."""
-    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "sqlite_sequence"}
+    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "custom_skills", "sqlite_sequence"}
     conn = get_sync_connection()
     try:
         cursor = conn.execute(
@@ -170,7 +181,7 @@ def execute_readonly_sql(sql: str) -> dict:
 
 def drop_user_table(table_name: str) -> dict:
     """Drop a user data table. Internal metadata tables are protected."""
-    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "sqlite_sequence"}
+    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "custom_skills", "sqlite_sequence"}
     if table_name in internal:
         return {"error": f"A tabela '{table_name}' é interna e não pode ser excluída."}
     conn = get_sync_connection()
@@ -186,5 +197,77 @@ def drop_user_table(table_name: str) -> dict:
         return {"success": True, "message": f"Tabela '{table_name}' excluída."}
     except Exception as e:
         return {"error": str(e)}
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Custom Skills
+# ---------------------------------------------------------------------------
+
+def get_all_skills() -> list[dict]:
+    conn = get_sync_connection()
+    try:
+        cursor = conn.execute("SELECT * FROM custom_skills ORDER BY name")
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def get_active_skills() -> list[dict]:
+    conn = get_sync_connection()
+    try:
+        cursor = conn.execute("SELECT * FROM custom_skills WHERE is_active = 1 ORDER BY name")
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def get_skill_by_id(skill_id: int) -> dict | None:
+    conn = get_sync_connection()
+    try:
+        row = conn.execute("SELECT * FROM custom_skills WHERE id = ?", (skill_id,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def create_skill(name: str, description: str, content: str, created_by: str = "") -> dict:
+    conn = get_sync_connection()
+    try:
+        conn.execute(
+            "INSERT INTO custom_skills (name, description, content, created_by) VALUES (?, ?, ?, ?)",
+            (name, description, content, created_by),
+        )
+        conn.commit()
+        sid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        return {"id": sid, "name": name}
+    finally:
+        conn.close()
+
+
+def update_skill(skill_id: int, **kwargs) -> bool:
+    allowed = {"name", "description", "content", "is_active"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
+    if not fields:
+        return False
+    from datetime import datetime
+    fields["updated_at"] = datetime.utcnow().isoformat()
+    set_clause = ", ".join(f"{k} = ?" for k in fields)
+    conn = get_sync_connection()
+    try:
+        conn.execute(f"UPDATE custom_skills SET {set_clause} WHERE id = ?", (*fields.values(), skill_id))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def delete_skill(skill_id: int) -> bool:
+    conn = get_sync_connection()
+    try:
+        conn.execute("DELETE FROM custom_skills WHERE id = ?", (skill_id,))
+        conn.commit()
+        return True
     finally:
         conn.close()
