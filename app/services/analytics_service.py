@@ -15,7 +15,6 @@ import pandas as pd
 from scipy import stats as sp_stats
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.cluster import KMeans
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     r2_score, mean_absolute_error, mean_squared_error,
     accuracy_score, precision_score, recall_score, f1_score,
@@ -376,105 +375,276 @@ def _variable_recommendation(coeff_table):
 
 
 def _run_linear(X, y, features, target, work, target_encoded=False):
-    test_size = 0.2 if len(work) >= 50 else 0.3
-    X_train, X_test, y_train, y_test = train_test_split(
-        X.values, y.values, test_size=test_size, random_state=42,
-    )
+    """Linear regression matching Real Statistics (XRealStatsX) output — 100% of observations."""
+    X_all = X.values
+    y_all = y.values
+    n = len(y_all)
+    p = X_all.shape[1]  # number of predictors (without intercept)
 
     model = LinearRegression()
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    model.fit(X_all, y_all)
+    y_pred = model.predict(X_all)
+    residuals = y_all - y_pred
 
-    # R² ajustado
-    n = len(y_test)
-    p = X_test.shape[1]
-    r2 = r2_score(y_test, y_pred)
-    r2_adj = 1 - (1 - r2) * (n - 1) / (n - p - 1) if n > p + 1 else r2
+    # ---------- OVERALL FIT (Regression Statistics) ----------
+    y_mean = float(np.mean(y_all))
+    ss_total = float(np.sum((y_all - y_mean) ** 2))
+    ss_residual = float(np.sum(residuals ** 2))
+    ss_regression = ss_total - ss_residual
 
+    df_regression = p
+    df_residual = n - p - 1
+    df_total = n - 1
+
+    ms_regression = ss_regression / df_regression if df_regression > 0 else 0
+    ms_residual = ss_residual / df_residual if df_residual > 0 else 1e-15
+
+    f_stat = ms_regression / ms_residual if ms_residual > 0 else 0
+    f_p_value = 1 - sp_stats.f.cdf(f_stat, df_regression, df_residual) if df_residual > 0 else 1
+
+    r2 = ss_regression / ss_total if ss_total > 0 else 0
+    r2_adj = 1 - (1 - r2) * df_total / df_residual if df_residual > 0 else r2
+    multiple_r = math.sqrt(max(r2, 0))
+    std_error_reg = math.sqrt(ms_residual)
+
+    # AIC / AICc / SBC (BIC) — Real Statistics formulas
+    aic = n * math.log(ss_residual / n) + 2 * (p + 1) if n > 0 and ss_residual > 0 else None
+    aicc = aic + 2 * (p + 2) * (p + 3) / (n - p - 3) if aic is not None and (n - p - 3) > 0 else None
+    sbc = n * math.log(ss_residual / n) + (p + 1) * math.log(n) if n > 0 and ss_residual > 0 else None
+
+    regression_stats = {
+        "multiple_r": _safe(multiple_r),
+        "r_square": _safe(r2),
+        "r_square_adj": _safe(r2_adj),
+        "std_error": _safe(std_error_reg),
+        "observations": n,
+        "aic": _safe(aic),
+        "aicc": _safe(aicc),
+        "sbc": _safe(sbc),
+    }
+
+    anova = {
+        "regression": {
+            "df": df_regression, "ss": _safe(ss_regression),
+            "ms": _safe(ms_regression), "f": _safe(f_stat),
+            "f_significance": _safe(f_p_value),
+        },
+        "residual": {
+            "df": df_residual, "ss": _safe(ss_residual),
+            "ms": _safe(ms_residual),
+        },
+        "total": {
+            "df": df_total, "ss": _safe(ss_total),
+        },
+    }
+
+    # ---------- COEFFICIENT TABLE (coeff, std err, t, p-value, lower, upper, VIF) ----------
+    coeff_table = []
     try:
-        mape = _safe(mean_absolute_percentage_error(y_test, y_pred))
-    except Exception:
-        mape = None
+        X_with_int = np.column_stack([np.ones(n), X_all])
+        XtX_inv = np.linalg.inv(X_with_int.T @ X_with_int)
+        var_covar = XtX_inv * ms_residual
+        se_all = np.sqrt(np.diag(var_covar))
+        all_coefs = np.concatenate([[model.intercept_], model.coef_])
+        all_names = ["(Intercepto)"] + list(features)
 
-    # Classification metrics via binarization (above/below median)
-    median_val = float(np.median(y_test))
-    y_true_bin = (y_test > median_val).astype(int)
+        t_crit = sp_stats.t.ppf(0.975, df_residual) if df_residual > 0 else 1.96
+
+        # VIF: 1/(1 - R²_j) where R²_j = regressing x_j on all other x variables
+        vif_values = [None]  # intercept has no VIF
+        if p > 1:
+            for j in range(p):
+                others = [k for k in range(p) if k != j]
+                X_others = X_all[:, others]
+                X_j = X_all[:, j]
+                from sklearn.linear_model import LinearRegression as _LR
+                _m = _LR().fit(X_others, X_j)
+                ss_tot_j = np.sum((X_j - X_j.mean()) ** 2)
+                ss_res_j = np.sum((X_j - _m.predict(X_others)) ** 2)
+                r2_j = 1 - ss_res_j / ss_tot_j if ss_tot_j > 0 else 0
+                vif_values.append(_safe(1 / (1 - r2_j)) if r2_j < 1 else None)
+        else:
+            vif_values.append(None)
+
+        for i, name in enumerate(all_names):
+            coef = float(all_coefs[i])
+            se = float(se_all[i]) if se_all[i] > 0 else 1e-12
+            t_val = coef / se
+            p_val = 2 * (1 - sp_stats.t.cdf(abs(t_val), df_residual)) if df_residual > 0 else 1
+            lower = coef - t_crit * se
+            upper = coef + t_crit * se
+            coeff_table.append({
+                "name": name,
+                "coeff": _safe(coef), "se": _safe(se),
+                "wald": _safe(t_val), "p_value": _safe(p_val),
+                "exp_b": _safe(math.exp(min(max(coef, -500), 500))),
+                "lower": _safe(lower), "upper": _safe(upper),
+                "vif": vif_values[i] if i < len(vif_values) else None,
+                "significant": bool(p_val < 0.05),
+            })
+    except Exception:
+        coeff_table = _coeff_table_linear(X_all, y_all, model, features)
+
+    recommendation = _variable_recommendation(coeff_table)
+
+    # ---------- RESIDUAL OUTPUT ----------
+    std_residuals = residuals / std_error_reg if std_error_reg > 0 else residuals
+    max_residuals = min(n, 500)  # cap for performance
+    residual_output = [
+        {
+            "obs": int(i + 1),
+            "predicted": _safe(float(y_pred[i])),
+            "residual": _safe(float(residuals[i])),
+            "std_residual": _safe(float(std_residuals[i])),
+        }
+        for i in range(max_residuals)
+    ]
+
+    # ---------- DURBIN-WATSON ----------
+    dw = None
+    if n > 1:
+        diff_res = np.diff(residuals)
+        dw = _safe(float(np.sum(diff_res ** 2) / ss_residual)) if ss_residual > 0 else None
+
+    # ---------- Classification metrics (binarization for compatibility) ----------
+    median_val = float(np.median(y_all))
+    y_true_bin = (y_all > median_val).astype(int)
     y_pred_bin = (y_pred > median_val).astype(int)
     y_range = max(y_pred.max() - y_pred.min(), 1e-9)
     y_prob_lin = (y_pred - y_pred.min()) / y_range
     clf_metrics = _classification_metrics(y_true_bin, y_pred_bin, y_prob_lin)
 
-    # Coefficient statistics table
-    coeff_table = _coeff_table_linear(X_train, y_train, model, features)
-    recommendation = _variable_recommendation(coeff_table)
+    try:
+        mape = _safe(mean_absolute_percentage_error(y_all, y_pred))
+    except Exception:
+        mape = None
 
     return {
         "model_type": "linear", "target": target, "features": features,
+        "regression_stats": regression_stats,
+        "anova": anova,
         "metrics": {
             "r2": _safe(r2), "r2_adj": _safe(r2_adj),
-            "mae": _safe(mean_absolute_error(y_test, y_pred)),
-            "mse": _safe(mean_squared_error(y_test, y_pred)),
-            "rmse": _safe(float(np.sqrt(mean_squared_error(y_test, y_pred)))),
+            "mae": _safe(mean_absolute_error(y_all, y_pred)),
+            "mse": _safe(mean_squared_error(y_all, y_pred)),
+            "rmse": _safe(float(np.sqrt(mean_squared_error(y_all, y_pred)))),
             "mape": mape,
-            "explained_var": _safe(explained_variance_score(y_test, y_pred)),
+            "explained_var": _safe(explained_variance_score(y_all, y_pred)),
         },
         "classification_metrics": clf_metrics,
         "coeff_table": coeff_table,
         "recommendation": recommendation,
         "coefficients": {f: _safe(c) for f, c in zip(features, model.coef_)},
         "intercept": _safe(model.intercept_),
-        "actual": [_safe(v) for v in y_test[:100]],
-        "predicted": [_safe(v) for v in y_pred[:100]],
-        "train_size": len(X_train), "test_size": len(X_test),
+        "actual": [_safe(v) for v in y_all[:500]],
+        "predicted": [_safe(v) for v in y_pred[:500]],
+        "residual_output": residual_output,
+        "durbin_watson": dw,
+        "observations": n,
     }
 
 
 def _run_logistic(X, y, features, target, work):
+    """Logistic regression matching Real Statistics (XRealStatsX) output — 100% of observations."""
     le_target = LabelEncoder()
     y_enc = le_target.fit_transform(y.astype(str))
     class_names = le_target.classes_.tolist()
     n_classes = len(class_names)
     is_binary = n_classes == 2
 
-    test_size = 0.2 if len(work) >= 50 else 0.3
-    X_train, X_test, y_train, y_test = train_test_split(
-        X.values, y_enc, test_size=test_size, random_state=42,
-    )
+    X_all = X.values
+    y_all = y_enc
+    n = len(y_all)
+    p = X_all.shape[1]
 
-    # Use lbfgs for multiclass (handles many classes better)
+    # Fit on ALL data
     try:
-        model = LogisticRegression(
-            max_iter=5000, random_state=42, solver="lbfgs",
-        )
-        model.fit(X_train, y_train)
+        model = LogisticRegression(max_iter=5000, random_state=42, solver="lbfgs")
+        model.fit(X_all, y_all)
     except Exception:
-        # Fallback: saga solver with scaling
         try:
             scaler = StandardScaler()
-            X_train_s = scaler.fit_transform(X_train)
-            X_test_s = scaler.transform(X_test)
-            model = LogisticRegression(
-                max_iter=5000, random_state=42, solver="saga",
-            )
-            model.fit(X_train_s, y_train)
-            X_test = X_test_s
+            X_all = scaler.fit_transform(X_all)
+            model = LogisticRegression(max_iter=5000, random_state=42, solver="saga")
+            model.fit(X_all, y_all)
         except Exception as e:
             return {"error": f"Erro ao treinar modelo logístico: {str(e)[:200]}"}
 
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(X_all)
 
-    # Probabilities for AUC/KS
+    # Probabilities
     try:
-        y_prob = model.predict_proba(X_test)
+        y_prob = model.predict_proba(X_all)
     except Exception:
         y_prob = None
 
-    cm = confusion_matrix(y_test, y_pred)
-    clf_metrics = _classification_metrics(y_test, y_pred, y_prob)
+    cm = confusion_matrix(y_all, y_pred)
+    clf_metrics = _classification_metrics(y_all, y_pred, y_prob)
 
-    # Coefficient statistics table
-    coeff_table = _coeff_table_logistic(X_train, y_train, model, features)
+    # ---------- SIGNIFICANCE TESTING & R-SQUARE (Real Statistics structure) ----------
+    model_summary = None
+    omnibus_test = None
+    try:
+        eps = 1e-15
+        y_prob_clipped = np.clip(y_prob, eps, 1 - eps)
+
+        # LL1 (fitted model)
+        ll_model = sum(math.log(y_prob_clipped[i, y_all[i]]) for i in range(n))
+
+        # LL0 (null model — class frequencies only)
+        class_freq = np.bincount(y_all, minlength=n_classes) / n
+        class_freq = np.clip(class_freq, eps, 1 - eps)
+        ll_null = sum(math.log(class_freq[y_all[i]]) for i in range(n))
+
+        # Chi-square (Omnibus / Likelihood Ratio Test)
+        chi2_model = 2 * (ll_model - ll_null)
+        df_model = p
+        chi2_p_value = 1 - sp_stats.chi2.cdf(chi2_model, df_model) if df_model > 0 else 1
+
+        # Pseudo R-squared (Real Statistics: L=McFadden, CS=Cox&Snell, N=Nagelkerke)
+        mcfadden = 1 - (ll_model / ll_null) if ll_null != 0 else 0
+        cox_snell = 1 - math.exp((-2 / n) * (ll_model - ll_null))
+        cox_snell_max = 1 - math.exp((2 * ll_null) / n)
+        nagelkerke = cox_snell / cox_snell_max if cox_snell_max > 0 else 0
+
+        # AIC / BIC (Real Statistics formulas)
+        aic = -2 * ll_model + 2 * (p + 1)
+        bic = -2 * ll_model + (p + 1) * math.log(n)
+
+        model_summary = {
+            "ll0": _safe(ll_null),
+            "ll1": _safe(ll_model),
+            "neg2ll": _safe(-2 * ll_model),
+            "neg2ll_null": _safe(-2 * ll_null),
+            "mcfadden_r2": _safe(mcfadden),
+            "cox_snell_r2": _safe(cox_snell),
+            "nagelkerke_r2": _safe(nagelkerke),
+            "aic": _safe(aic),
+            "bic": _safe(bic),
+            "observations": n,
+        }
+
+        omnibus_test = {
+            "chi2": _safe(chi2_model),
+            "df": df_model,
+            "p_value": _safe(chi2_p_value),
+        }
+    except Exception:
+        pass
+
+    # ---------- COEFFICIENT TABLE (coeff b, s.e., Wald, p-value, exp(b), lower, upper) ----------
+    coeff_table = _coeff_table_logistic(X_all, y_all, model, features)
     recommendation = _variable_recommendation(coeff_table)
+
+    # ---------- CLASSIFICATION TABLE ----------
+    class_accuracy = []
+    for i, cn in enumerate(class_names):
+        total_actual = int(cm[i].sum())
+        correct = int(cm[i, i])
+        pct = _safe(correct / total_actual * 100) if total_actual > 0 else 0
+        class_accuracy.append({"class": cn, "total": total_actual, "correct": correct, "pct": pct})
+    overall_correct = int(np.trace(cm))
+    overall_pct = _safe(overall_correct / n * 100) if n > 0 else 0
 
     # ROC curve data (binary only)
     roc_curve_data = None
@@ -482,7 +652,7 @@ def _run_logistic(X, y, features, target, work):
         try:
             from sklearn.metrics import roc_curve
             prob_pos = y_prob[:, 1]
-            fpr, tpr, _ = roc_curve(y_test, prob_pos)
+            fpr, tpr, _ = roc_curve(y_all, prob_pos)
             step = max(1, len(fpr) // 100)
             roc_curve_data = {
                 "fpr": [_safe(v) for v in fpr[::step]],
@@ -493,14 +663,19 @@ def _run_logistic(X, y, features, target, work):
 
     return {
         "model_type": "logistic", "target": target, "features": features,
+        "model_summary": model_summary,
+        "omnibus_test": omnibus_test,
         "classification_metrics": clf_metrics,
         "coeff_table": coeff_table,
         "recommendation": recommendation,
         "confusion_matrix": cm.tolist(),
         "class_names": class_names,
+        "class_accuracy": class_accuracy,
+        "overall_accuracy": overall_pct,
         "roc_curve": roc_curve_data,
-        "train_size": len(X_train), "test_size": len(X_test),
+        "observations": n,
     }
+
 
 
 def _run_clustering(df, features, n_clusters: int = 0):
@@ -1108,6 +1283,7 @@ function renderClfMetrics(clf, label) {{
 function renderCoeffTable(table, recommendation, modelType) {{
     if (!table || table.length === 0) return '';
     const isLogistic = modelType === 'logistic';
+    const hasVIF = !isLogistic && table.some(r => r.vif !== null && r.vif !== undefined);
     const tooltips = {{
         coeff: 'Coeficiente (B): magnitude e direção do efeito da variável sobre o alvo. Positivo = aumenta; Negativo = diminui.',
         se: 'Erro Padrão (S.E.): incerteza da estimativa do coeficiente. Quanto menor, mais precisa a estimativa.',
@@ -1117,13 +1293,14 @@ function renderCoeffTable(table, recommendation, modelType) {{
         p_value: 'p-valor: probabilidade de observar este efeito por acaso. p < 0.05 = estatisticamente significativo (95% de confiança).',
         exp_b: isLogistic
             ? 'Exp(B) — Odds Ratio: multiplicador da chance. >1 = aumenta a chance; <1 = diminui a chance; =1 = sem efeito.'
-            : 'Exp(B): exponencial do coeficiente. Para regressão linear, indica o fator multiplicativo quando B varia em 1 unidade.',
+            : 'Exp(B): exponencial do coeficiente.',
         lower: isLogistic
             ? 'Limite Inferior do IC 95% para Exp(B). Se o intervalo contém 1, o efeito pode não ser significativo.'
             : 'Limite Inferior do IC 95% para o coeficiente. Se o intervalo contém 0, o efeito pode não ser significativo.',
         upper: isLogistic
             ? 'Limite Superior do IC 95% para Exp(B).'
             : 'Limite Superior do IC 95% para o coeficiente.',
+        vif: 'VIF (Variance Inflation Factor): detecta multicolinearidade. VIF > 5 indica correlação alta entre preditores; VIF > 10 é problemático.',
     }};
 
     const th = (label, key) => `<th><span class="aa-tooltip-trigger">${{label}} <span class="aa-tooltip-icon">?</span><span class="aa-tooltip-text">${{tooltips[key]}}</span></span></th>`;
@@ -1133,13 +1310,14 @@ function renderCoeffTable(table, recommendation, modelType) {{
     <table class="aa-freq-table aa-coeff-stats-table">
     <thead><tr>
         <th>Variável</th>
-        ${{th('Coeff (B)', 'coeff')}}
-        ${{th('S.E.', 'se')}}
-        ${{th(isLogistic ? 'Wald (χ²)' : 't', 'wald')}}
-        ${{th('p-valor', 'p_value')}}
-        ${{th('Exp(B)', 'exp_b')}}
-        ${{th(isLogistic ? 'Inf (IC 95%)' : 'Inferior', 'lower')}}
-        ${{th(isLogistic ? 'Sup (IC 95%)' : 'Superior', 'upper')}}
+        ${{th('coeff', 'coeff')}}
+        ${{th('std err', 'se')}}
+        ${{th(isLogistic ? 'Wald' : 't stat', 'wald')}}
+        ${{th('p-value', 'p_value')}}
+        ${{isLogistic ? th('exp(b)', 'exp_b') : ''}}
+        ${{th('lower', 'lower')}}
+        ${{th('upper', 'upper')}}
+        ${{hasVIF ? th('vif', 'vif') : ''}}
     </tr></thead>
     <tbody>`;
 
@@ -1156,9 +1334,10 @@ function renderCoeffTable(table, recommendation, modelType) {{
             <td>${{fmtC(row.se)}}</td>
             <td>${{fmtC(row.wald)}}</td>
             <td style="color:${{pColor}};font-weight:${{sig ? '600' : 'normal'}}">${{pFmt}}</td>
-            <td>${{fmtC(row.exp_b)}}</td>
+            ${{isLogistic ? `<td>${{fmtC(row.exp_b)}}</td>` : ''}}
             <td>${{fmtC(row.lower)}}</td>
             <td>${{fmtC(row.upper)}}</td>
+            ${{hasVIF ? `<td style="color:${{row.vif && row.vif > 5 ? '#f0883e' : '#8b949e'}}">${{row.vif !== null && row.vif !== undefined ? fmtC(row.vif) : ''}}</td>` : ''}}
         </tr>`;
     }});
 
@@ -1180,56 +1359,194 @@ function renderCoeffTable(table, recommendation, modelType) {{
 
 function renderLinearResult(r) {{
     const m = r.metrics;
-    let html = `<div class="aa-section"><div class="aa-section-title">Regressão Linear — ${{r.target}}</div>
+    const rs = r.regression_stats;
+    const an = r.anova;
+
+    let html = `<div class="aa-section"><div class="aa-section-title">Regressão Linear — ${{r.target}}</div>`;
+
+    // --- OVERALL FIT (Real Statistics) ---
+    if (rs) {{
+        html += `<div class="aa-grid" style="grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="aa-card">
+        <div class="aa-card-title">OVERALL FIT</div>
+        <table class="aa-freq-table" style="max-width:100%;">
+            <tbody>
+                <tr><td style="color:#8b949e;">Multiple R</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(rs.multiple_r)}}</td></tr>
+                <tr><td style="color:#8b949e;">R Square</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(rs.r_square)}}</td></tr>
+                <tr><td style="color:#8b949e;">Adjusted R Square</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(rs.r_square_adj)}}</td></tr>
+                <tr><td style="color:#8b949e;">Standard Error</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(rs.std_error)}}</td></tr>
+                <tr><td style="color:#8b949e;">Observations</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{rs.observations}}</td></tr>
+            </tbody>
+        </table></div>
+        <div class="aa-card">
+        <div class="aa-card-title">&nbsp;</div>
+        <table class="aa-freq-table" style="max-width:100%;">
+            <tbody>
+                <tr><td style="color:#8b949e;">AIC</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{rs.aic !== null ? fmtC(rs.aic) : '—'}}</td></tr>
+                <tr><td style="color:#8b949e;">AICc</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{rs.aicc !== null ? fmtC(rs.aicc) : '—'}}</td></tr>
+                <tr><td style="color:#8b949e;">SBC (BIC)</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{rs.sbc !== null ? fmtC(rs.sbc) : '—'}}</td></tr>
+                ${{r.durbin_watson !== null && r.durbin_watson !== undefined ? `<tr><td style="color:#8b949e;">Durbin-Watson</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(r.durbin_watson)}}</td></tr>` : ''}}
+            </tbody>
+        </table></div></div>`;
+    }}
+
+    // --- ANOVA ---
+    if (an) {{
+        const pFmt = an.regression.f_significance !== null
+            ? (an.regression.f_significance < 0.0000000001 ? '< 0.0000000001' : fmtC(an.regression.f_significance))
+            : '—';
+        const pColor = an.regression.f_significance !== null && an.regression.f_significance < 0.05 ? '#39d353' : '#8b949e';
+        const sig = an.regression.f_significance !== null && an.regression.f_significance < 0.05 ? 'yes' : 'no';
+        const sigColor = sig === 'yes' ? '#39d353' : '#8b949e';
+        html += `<div class="aa-card" style="margin-bottom:16px;">
+        <div class="aa-card-title">ANOVA</div>
+        <div style="overflow-x:auto;">
+        <table class="aa-freq-table aa-coeff-stats-table">
+            <thead><tr>
+                <th></th><th>df</th><th>SS</th><th>MS</th><th>F</th><th>p-value</th><th>sig</th>
+            </tr></thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight:600;color:#58a6ff;">Regression</td>
+                    <td>${{an.regression.df}}</td>
+                    <td>${{fmtC(an.regression.ss)}}</td>
+                    <td>${{fmtC(an.regression.ms)}}</td>
+                    <td style="font-weight:600;">${{fmtC(an.regression.f)}}</td>
+                    <td style="color:${{pColor}};font-weight:600;">${{pFmt}}</td>
+                    <td style="color:${{sigColor}};font-weight:600;text-align:center;">${{sig}}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;color:#58a6ff;">Residual</td>
+                    <td>${{an.residual.df}}</td>
+                    <td>${{fmtC(an.residual.ss)}}</td>
+                    <td>${{fmtC(an.residual.ms)}}</td>
+                    <td></td><td></td><td></td>
+                </tr>
+                <tr style="border-top:1px solid #30363d;">
+                    <td style="font-weight:600;color:#58a6ff;">Total</td>
+                    <td>${{an.total.df}}</td>
+                    <td>${{fmtC(an.total.ss)}}</td>
+                    <td></td><td></td><td></td><td></td>
+                </tr>
+            </tbody>
+        </table></div></div>`;
+    }}
+
+    html += `</div>`;
+
+    // Coefficient table (with VIF)
+    html += renderCoeffTable(r.coeff_table, r.recommendation, 'linear');
+
+    // Metrics cards
+    html += `<div class="aa-section"><div class="aa-section-title">Métricas (100% das observações)</div>
     <div class="aa-grid aa-grid-6" style="margin-bottom:16px;">
-        <div class="aa-metric-card"><div class="aa-metric-value">${{fmt(m.r2)}}</div><div class="aa-metric-label">R²</div></div>
-        <div class="aa-metric-card"><div class="aa-metric-value">${{fmt(m.r2_adj)}}</div><div class="aa-metric-label">R² Ajustado</div></div>
         <div class="aa-metric-card"><div class="aa-metric-value">${{fmt(m.mae)}}</div><div class="aa-metric-label">MAE</div></div>
+        <div class="aa-metric-card"><div class="aa-metric-value">${{fmt(m.mse)}}</div><div class="aa-metric-label">MSE</div></div>
         <div class="aa-metric-card"><div class="aa-metric-value">${{fmt(m.rmse)}}</div><div class="aa-metric-label">RMSE</div></div>
         <div class="aa-metric-card"><div class="aa-metric-value">${{m.mape !== null ? (m.mape * 100).toFixed(1) + '%' : '—'}}</div><div class="aa-metric-label">MAPE</div></div>
         <div class="aa-metric-card"><div class="aa-metric-value">${{fmt(m.explained_var)}}</div><div class="aa-metric-label">Var. Explicada</div></div>
-    </div>
-    <div class="aa-grid aa-grid-4" style="margin-bottom:16px;">
-        <div class="aa-metric-card"><div class="aa-metric-value">${{fmt(m.mse)}}</div><div class="aa-metric-label">MSE</div></div>
-        <div class="aa-metric-card"><div class="aa-metric-value">${{r.train_size}}/${{r.test_size}}</div><div class="aa-metric-label">Train/Test</div></div>
+        <div class="aa-metric-card"><div class="aa-metric-value">${{r.observations}}</div><div class="aa-metric-label">Observações</div></div>
     </div></div>`;
 
     html += renderClfMetrics(r.classification_metrics, 'Métricas de Classificação (binarizado pela mediana)');
 
-    // Coefficient statistics table
-    html += renderCoeffTable(r.coeff_table, r.recommendation, 'linear');
-
     html += `<div class="aa-section"><div class="aa-section-title">Real vs Previsto</div><div class="aa-card"><div style="height:300px;"><canvas id="predChart1"></canvas></div></div></div>`;
+
+    // Residual Output (Real Statistics)
+    if (r.residual_output && r.residual_output.length > 0) {{
+        html += `<div class="aa-section"><div class="aa-section-title">Saída de Resíduos</div>
+        <div class="aa-card" style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+        <table class="aa-freq-table aa-coeff-stats-table">
+        <thead><tr><th>Obs</th><th>Previsto</th><th>Resíduo</th><th>Resíduo Padrão</th></tr></thead>
+        <tbody>`;
+        r.residual_output.forEach(row => {{
+            const absStd = Math.abs(row.std_residual || 0);
+            const outlier = absStd > 2 ? 'color:#f0883e;font-weight:600;' : '';
+            html += `<tr>
+                <td>${{row.obs}}</td>
+                <td>${{fmtC(row.predicted)}}</td>
+                <td>${{fmtC(row.residual)}}</td>
+                <td style="${{outlier}}">${{fmtC(row.std_residual)}}</td>
+            </tr>`;
+        }});
+        html += `</tbody></table></div></div>`;
+    }}
+
     return html;
 }}
 
 function renderLogisticResult(r) {{
-    let html = `<div class="aa-section"><div class="aa-section-title">Regressão Logística — ${{r.target}}</div></div>`;
+    let html = `<div class="aa-section"><div class="aa-section-title">Regressão Logística — ${{r.target}}</div>`;
 
-    html += renderClfMetrics(r.classification_metrics, 'Métricas Estatísticas');
+    // --- Significance Testing & R-Square (Real Statistics layout) ---
+    const ms = r.model_summary;
+    const ot = r.omnibus_test;
+    if (ms || ot) {{
+        html += `<div class="aa-grid" style="grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">`;
 
-    html += `<div class="aa-info" style="margin-bottom:16px;">Train: ${{r.train_size}} · Test: ${{r.test_size}}</div>`;
+        if (ot && ms) {{
+            const pFmt = ot.p_value !== null ? (ot.p_value < 0.0000000001 ? '< 0.0000000001' : fmtC(ot.p_value)) : '—';
+            const pColor = ot.p_value !== null && ot.p_value < 0.05 ? '#39d353' : '#8b949e';
+            const sig = ot.p_value !== null && ot.p_value < 0.05 ? 'yes' : 'no';
+            const sigColor = sig === 'yes' ? '#39d353' : '#8b949e';
+            html += `<div class="aa-card">
+            <div class="aa-card-title">Significance Testing</div>
+            <table class="aa-freq-table" style="max-width:100%;">
+                <tbody>
+                    <tr><td style="color:#8b949e;">LL0</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(ms.ll0)}}</td></tr>
+                    <tr><td style="color:#8b949e;">LL1</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(ms.ll1)}}</td></tr>
+                    <tr style="border-top:1px solid #30363d;"><td style="color:#8b949e;">Chi-Sq</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;">${{fmtC(ot.chi2)}}</td></tr>
+                    <tr><td style="color:#8b949e;">df</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{ot.df}}</td></tr>
+                    <tr><td style="color:#8b949e;">p-value</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${{pColor}};font-weight:600;">${{pFmt}}</td></tr>
+                    <tr><td style="color:#8b949e;">sig</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${{sigColor}};font-weight:600;">${{sig}}</td></tr>
+                </tbody>
+            </table></div>`;
 
-    // Coefficient statistics table
+            html += `<div class="aa-card">
+            <div class="aa-card-title">R-Square & Information Criteria</div>
+            <table class="aa-freq-table" style="max-width:100%;">
+                <tbody>
+                    <tr><td style="color:#8b949e;">R-Sq (L) McFadden</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(ms.mcfadden_r2)}}</td></tr>
+                    <tr><td style="color:#8b949e;">R-Sq (CS) Cox &amp; Snell</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(ms.cox_snell_r2)}}</td></tr>
+                    <tr><td style="color:#8b949e;">R-Sq (N) Nagelkerke</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{fmtC(ms.nagelkerke_r2)}}</td></tr>
+                    <tr style="border-top:1px solid #30363d;"><td style="color:#8b949e;">AIC</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{ms.aic !== null && ms.aic !== undefined ? fmtC(ms.aic) : '—'}}</td></tr>
+                    <tr><td style="color:#8b949e;">BIC</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{ms.bic !== null && ms.bic !== undefined ? fmtC(ms.bic) : '—'}}</td></tr>
+                    <tr><td style="color:#8b949e;">Observations</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${{ms.observations}}</td></tr>
+                </tbody>
+            </table></div>`;
+        }}
+        html += `</div>`;
+    }}
+
+    html += `</div>`;
+
+    // Coefficient table (coeff, s.e., Wald, p-value, exp(b), lower, upper)
     html += renderCoeffTable(r.coeff_table, r.recommendation, 'logistic');
 
-    // Confusion matrix + ROC
-    html += `<div class="aa-section"><div class="aa-section-title">Matriz de Confusão & Curva ROC</div>
+    html += renderClfMetrics(r.classification_metrics, 'Métricas Estatísticas (100% das observações)');
+
+    // Classification Table with accuracy % (Real Statistics style)
+    html += `<div class="aa-section"><div class="aa-section-title">Classification Table & Curva ROC</div>
     <div class="aa-grid" style="grid-template-columns:1fr 1fr;gap:16px;">`;
 
-    html += '<div class="aa-card"><div class="aa-card-title">Matriz de Confusão</div>';
+    html += '<div class="aa-card"><div class="aa-card-title">Classification Table</div>';
     if (r.class_names && r.confusion_matrix) {{
         html += '<div style="overflow-x:auto;max-height:400px;overflow-y:auto;"><table class="aa-freq-table"><thead><tr><th style="min-width:80px;">Real \\ Pred</th>';
         r.class_names.forEach(c => html += `<th>${{c}}</th>`);
-        html += '</tr></thead><tbody>';
+        html += '<th>% Correct</th></tr></thead><tbody>';
         r.confusion_matrix.forEach((row, i) => {{
             html += `<tr><td style="font-weight:600;color:#58a6ff">${{r.class_names[i]}}</td>`;
             row.forEach((v, j) => {{
                 const bg = i === j ? 'rgba(57,211,83,0.15)' : (v > 0 ? 'rgba(255,99,71,0.1)' : '');
                 html += `<td style="background:${{bg}}">${{v}}</td>`;
             }});
-            html += '</tr>';
+            const ca = r.class_accuracy ? r.class_accuracy[i] : null;
+            const pct = ca ? ca.pct : '—';
+            html += `<td style="font-weight:600;color:#39d353;">${{typeof pct === 'number' ? pct.toFixed(1) + '%' : pct}}</td></tr>`;
         }});
+        html += `<tr style="border-top:1px solid #30363d;"><td style="font-weight:600;color:#58a6ff;">Overall</td>`;
+        r.class_names.forEach(() => html += '<td></td>');
+        html += `<td style="font-weight:700;color:#39d353;">${{typeof r.overall_accuracy === 'number' ? r.overall_accuracy.toFixed(1) + '%' : '—'}}</td></tr>`;
         html += '</tbody></table></div>';
     }}
     html += '</div>';
