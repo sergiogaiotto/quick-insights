@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import secrets
 from datetime import datetime, timedelta
 from app.core.config import settings
@@ -38,10 +39,13 @@ def validate_api_key(raw_key: str) -> bool:
     conn = get_sync_connection()
     try:
         cursor = conn.execute(
-            "SELECT id FROM api_keys WHERE key_hash = ? AND is_active = 1",
+            "SELECT key_hash FROM api_keys WHERE key_hash = ? AND is_active = 1",
             (key_hash,),
         )
-        return cursor.fetchone() is not None
+        row = cursor.fetchone()
+        if not row:
+            return False
+        return hmac.compare_digest(row[0], key_hash)
     finally:
         conn.close()
 
@@ -51,12 +55,31 @@ def validate_api_key(raw_key: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def hash_password(password: str) -> str:
-    salted = f"{settings.api_salt}:{password}"
-    return hashlib.sha256(salted.encode("utf-8")).hexdigest()
+    iterations = 310000
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    return f"pbkdf2_sha256${iterations}${salt.hex()}${digest.hex()}"
+
+
+def _verify_legacy_password(password: str, password_hash: str) -> bool:
+    legacy_hash = hashlib.sha256(f"{settings.api_salt}:{password}".encode("utf-8")).hexdigest()
+    return hmac.compare_digest(legacy_hash, password_hash)
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return hash_password(password) == password_hash
+    if password_hash.startswith("pbkdf2_sha256$"):
+        try:
+            _, iterations, salt_hex, digest_hex = password_hash.split("$", 3)
+            derived = hashlib.pbkdf2_hmac(
+                "sha256",
+                password.encode("utf-8"),
+                bytes.fromhex(salt_hex),
+                int(iterations),
+            )
+            return hmac.compare_digest(derived.hex(), digest_hex)
+        except Exception:
+            return False
+    return _verify_legacy_password(password, password_hash)
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +138,16 @@ def authenticate_user(login: str, password: str) -> dict | None:
         user = dict(row)
         if not verify_password(password, user["password_hash"]):
             return None
+
+        # Transparent upgrade for legacy SHA-256 hashes.
+        if not user["password_hash"].startswith("pbkdf2_sha256$"):
+            new_hash = hash_password(password)
+            conn.execute(
+                "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
+                (new_hash, datetime.utcnow().isoformat(), user["id"]),
+            )
+            conn.commit()
+            user["password_hash"] = new_hash
         return user
     finally:
         conn.close()

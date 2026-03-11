@@ -1,6 +1,6 @@
 import json
+import re
 import uuid
-import shutil
 from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException, Header, Query, Request, Response, Depends
 from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse
@@ -33,6 +33,21 @@ from app.services.analytics_service import generate_analytics_html, run_predicti
 router = APIRouter(prefix="/api")
 
 COOKIE_NAME = "qi_session"
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+SAFE_FILENAME = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def _sanitize_filename(filename: str) -> str:
+    base_name = Path(filename or "").name
+    if not base_name or not SAFE_FILENAME.fullmatch(base_name):
+        raise HTTPException(400, "Nome de arquivo inválido.")
+    return base_name
+
+
+def _safe_table_name(name: str) -> str:
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name or ""):
+        raise HTTPException(400, "Nome de tabela inválido")
+    return name
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +86,12 @@ async def login(req: LoginRequest, response: Response):
         },
     })
     response.set_cookie(
-        key=COOKIE_NAME, value=token, httponly=True, samesite="lax", max_age=86400,
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.cookie_secure,
+        max_age=86400,
     )
     return response
 
@@ -175,8 +195,9 @@ async def list_tables():
 
 
 @router.get("/tables/{table_name}/preview")
-async def preview_table(table_name: str, limit: int = Query(20, le=100)):
-    result = execute_readonly_sql(f'SELECT * FROM "{table_name}" LIMIT {limit}')
+async def preview_table(table_name: str, limit: int = Query(20, ge=1, le=100)):
+    safe_name = _safe_table_name(table_name)
+    result = execute_readonly_sql(f'SELECT * FROM "{safe_name}" LIMIT {limit}')
     if "error" in result:
         raise HTTPException(400, result["error"])
     return result
@@ -185,7 +206,8 @@ async def preview_table(table_name: str, limit: int = Query(20, le=100)):
 @router.delete("/tables/{table_name}")
 async def drop_table(table_name: str, user: dict = Depends(require_admin)):
     from app.core.database import drop_user_table
-    result = drop_user_table(table_name)
+    safe_name = _safe_table_name(table_name)
+    result = drop_user_table(safe_name)
     if "error" in result:
         raise HTTPException(400, result["error"])
     return result
@@ -194,20 +216,25 @@ async def drop_table(table_name: str, user: dict = Depends(require_admin)):
 # --- Excel Upload ---
 
 @router.post("/upload")
-async def upload_excel(file: UploadFile = File(...)):
-    if not file.filename.endswith((".xlsx", ".xls")):
+async def upload_excel(file: UploadFile = File(...), user: dict = Depends(require_admin)):
+    filename = _sanitize_filename(file.filename or "")
+    if not filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(400, "Apenas arquivos Excel (.xlsx, .xls) são aceitos.")
 
-    dest = settings.upload_dir / file.filename
+    data = await file.read()
+    if len(data) > MAX_UPLOAD_SIZE:
+        raise HTTPException(400, "Arquivo excede o tamanho máximo permitido (10MB).")
+
+    dest = settings.upload_dir / filename
     with open(dest, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+        f.write(data)
 
     try:
         report = import_excel(dest)
         reset_agent()
-        return {"filename": file.filename, "sheets": report}
-    except Exception as e:
-        raise HTTPException(500, f"Erro ao processar Excel: {str(e)}")
+        return {"filename": filename, "sheets": report}
+    except Exception:
+        raise HTTPException(500, "Erro ao processar Excel.")
 
 
 # --- Query (Natural Language via Deep Agent) ---
@@ -225,8 +252,8 @@ async def query_nl(req: QueryRequest, request: Request):
             user_login=user_login,
         )
         return result
-    except Exception as e:
-        raise HTTPException(500, f"Erro na consulta: {str(e)}")
+    except Exception:
+        raise HTTPException(500, "Erro na consulta.")
 
 
 # --- Analysis Types ---
@@ -255,7 +282,7 @@ async def get_analysis_type(type_id: int):
 
 
 @router.post("/analysis-types")
-async def create_analysis_type(data: AnalysisTypeCreate):
+async def create_analysis_type(data: AnalysisTypeCreate, user: dict = Depends(require_admin)):
     conn = get_sync_connection()
     try:
         conn.execute(
@@ -271,7 +298,7 @@ async def create_analysis_type(data: AnalysisTypeCreate):
 
 
 @router.put("/analysis-types/{type_id}")
-async def update_analysis_type(type_id: int, data: AnalysisTypeUpdate):
+async def update_analysis_type(type_id: int, data: AnalysisTypeUpdate, user: dict = Depends(require_admin)):
     conn = get_sync_connection()
     try:
         fields, values = [], []
@@ -294,7 +321,7 @@ async def update_analysis_type(type_id: int, data: AnalysisTypeUpdate):
 
 
 @router.delete("/analysis-types/{type_id}")
-async def delete_analysis_type(type_id: int):
+async def delete_analysis_type(type_id: int, user: dict = Depends(require_admin)):
     conn = get_sync_connection()
     try:
         conn.execute("DELETE FROM analysis_types WHERE id = ?", (type_id,))
@@ -385,12 +412,12 @@ async def send_email(req: EmailRequest):
 # --- API Keys ---
 
 @router.post("/keys")
-async def create_key(data: ApiKeyCreate):
+async def create_key(data: ApiKeyCreate, user: dict = Depends(require_admin)):
     return create_api_key(data.label)
 
 
 @router.get("/keys")
-async def list_keys():
+async def list_keys(user: dict = Depends(require_admin)):
     conn = get_sync_connection()
     try:
         cursor = conn.execute(
@@ -414,9 +441,9 @@ async def list_active_skills():
 
 
 @router.post("/skills")
-async def create_skill_route(req: SkillCreate, request: Request):
-    user = getattr(request.state, "user", None)
-    created_by = user["login"] if user else ""
+async def create_skill_route(req: SkillCreate, request: Request, user: dict = Depends(require_admin)):
+    current_user = getattr(request.state, "user", None)
+    created_by = current_user["login"] if current_user else ""
     try:
         return db_create_skill(
             name=req.name, description=req.description,
@@ -435,7 +462,7 @@ async def get_skill_route(skill_id: int):
 
 
 @router.put("/skills/{skill_id}")
-async def update_skill_route(skill_id: int, req: SkillUpdate):
+async def update_skill_route(skill_id: int, req: SkillUpdate, user: dict = Depends(require_admin)):
     skill = get_skill_by_id(skill_id)
     if not skill:
         raise HTTPException(404, "Skill não encontrada")
@@ -444,7 +471,7 @@ async def update_skill_route(skill_id: int, req: SkillUpdate):
 
 
 @router.put("/skills/{skill_id}/toggle")
-async def toggle_skill(skill_id: int):
+async def toggle_skill(skill_id: int, user: dict = Depends(require_admin)):
     skill = get_skill_by_id(skill_id)
     if not skill:
         raise HTTPException(404, "Skill não encontrada")
@@ -454,7 +481,7 @@ async def toggle_skill(skill_id: int):
 
 
 @router.delete("/skills/{skill_id}")
-async def delete_skill_route(skill_id: int):
+async def delete_skill_route(skill_id: int, user: dict = Depends(require_admin)):
     skill = get_skill_by_id(skill_id)
     if not skill:
         raise HTTPException(404, "Skill não encontrada")
@@ -475,8 +502,8 @@ async def external_query(req: ApiQueryRequest, x_api_key: str = Header(...)):
             user_login=f"api-key:{x_api_key[:8]}",
         )
         return result
-    except Exception as e:
-        raise HTTPException(500, f"Erro na consulta: {str(e)}")
+    except Exception:
+        raise HTTPException(500, "Erro na consulta.")
 
 
 # --- Gallery ---
@@ -494,7 +521,7 @@ async def list_gallery():
 
 
 @router.post("/gallery")
-async def save_to_gallery(req: GallerySaveRequest):
+async def save_to_gallery(req: GallerySaveRequest, user: dict = Depends(get_current_user)):
     token = uuid.uuid4().hex[:12]
     conn = get_sync_connection()
     try:
@@ -518,7 +545,7 @@ async def save_to_gallery(req: GallerySaveRequest):
 
 
 @router.delete("/gallery/{gallery_id}")
-async def delete_gallery_item(gallery_id: int):
+async def delete_gallery_item(gallery_id: int, user: dict = Depends(require_admin)):
     conn = get_sync_connection()
     try:
         conn.execute("DELETE FROM analysis_gallery WHERE id = ?", (gallery_id,))

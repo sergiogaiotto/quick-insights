@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from sqlalchemy import create_engine, text, inspect
 from app.core.config import settings
@@ -8,6 +9,32 @@ engine = create_engine(
     echo=False,
     connect_args={"check_same_thread": False},
 )
+
+
+def _is_safe_identifier(name: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name or ""))
+
+
+def _validate_select_only_sql(sql: str) -> str | None:
+    statement = (sql or "").strip()
+    if not statement:
+        return "Consulta vazia."
+    if ";" in statement.rstrip(";"):
+        return "Múltiplas instruções SQL não são permitidas."
+
+    upper = statement.upper()
+    if not (upper.startswith("SELECT") or upper.startswith("WITH") or upper.startswith("PRAGMA")):
+        return "Apenas instruções SELECT/WITH/PRAGMA são permitidas."
+
+    forbidden = {
+        "DROP", "DELETE", "UPDATE", "INSERT", "ALTER",
+        "CREATE", "REPLACE", "TRUNCATE", "ATTACH", "DETACH",
+    }
+    tokens = re.findall(r"[A-Z_]+", upper)
+    for token in tokens:
+        if token in forbidden:
+            return f"Comando '{token}' não é permitido em consultas de leitura."
+    return None
 
 
 def get_sync_connection() -> sqlite3.Connection:
@@ -158,14 +185,9 @@ def get_table_schema_text() -> str:
 
 def execute_readonly_sql(sql: str) -> dict:
     """Execute a read-only SQL statement and return results."""
-    forbidden = {
-        "DROP", "DELETE", "UPDATE", "INSERT", "ALTER",
-        "CREATE", "REPLACE", "TRUNCATE",
-    }
-    tokens = sql.upper().split()
-    for token in tokens:
-        if token in forbidden:
-            return {"error": f"Comando '{token}' não é permitido em consultas de leitura."}
+    validation_error = _validate_select_only_sql(sql)
+    if validation_error:
+        return {"error": validation_error}
 
     conn = get_sync_connection()
     try:
@@ -173,8 +195,8 @@ def execute_readonly_sql(sql: str) -> dict:
         columns = [desc[0] for desc in cursor.description] if cursor.description else []
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
         return {"columns": columns, "rows": rows, "row_count": len(rows)}
-    except Exception as e:
-        return {"error": str(e)}
+    except Exception:
+        return {"error": "Erro ao executar consulta de leitura."}
     finally:
         conn.close()
 
@@ -184,6 +206,8 @@ def drop_user_table(table_name: str) -> dict:
     internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "custom_skills", "sqlite_sequence"}
     if table_name in internal:
         return {"error": f"A tabela '{table_name}' é interna e não pode ser excluída."}
+    if not _is_safe_identifier(table_name):
+        return {"error": "Nome de tabela inválido."}
     conn = get_sync_connection()
     try:
         # Verify table exists
@@ -195,8 +219,8 @@ def drop_user_table(table_name: str) -> dict:
         conn.execute(f'DROP TABLE "{table_name}"')
         conn.commit()
         return {"success": True, "message": f"Tabela '{table_name}' excluída."}
-    except Exception as e:
-        return {"error": str(e)}
+    except Exception:
+        return {"error": "Erro ao excluir tabela."}
     finally:
         conn.close()
 

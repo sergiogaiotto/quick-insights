@@ -6,7 +6,7 @@ class QueryRequest(BaseModel):
     question: str = Field(..., min_length=3, description="Pergunta em linguagem natural")
     analysis_type_id: Optional[int] = Field(None, description="ID do tipo de análise")
     conversation_context: Optional[str] = Field(None, description="Contexto da conversa anterior")
-    result_limit: Optional[int] = Field(20, description="Limite de registros retornados (0 = sem limite)")
+    result_limit: Optional[int] = Field(20, ge=0, le=1000, description="Limite de registros retornados (0 = sem limite)")
 
 
 class QueryResponse(BaseModel):
@@ -68,12 +68,12 @@ class PredictionRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     login: str = Field(..., min_length=2)
-    password: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=8)
 
 
 class UserCreate(BaseModel):
     login: str = Field(..., min_length=2)
-    password: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=8)
     user_type: str = Field("user", pattern="^(admin|user)$")
     display_name: str = ""
     profile_description: str = ""
@@ -88,7 +88,7 @@ class UserUpdate(BaseModel):
 
 
 class PasswordChange(BaseModel):
-    new_password: str = Field(..., min_length=3)
+    new_password: str = Field(..., min_length=8)
 
 
 # --- Skills ---
