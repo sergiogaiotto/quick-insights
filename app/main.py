@@ -19,6 +19,17 @@ templates = Jinja2Templates(directory=str(settings.templates_dir))
 
 app.include_router(api_router)
 
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+    return response
+
+
 # Paths that don't require authentication
 PUBLIC_PATHS = {"/login", "/api/auth/login", "/api/auth/logout", "/api/auth/check"}
 PUBLIC_PREFIXES = ("/static/", "/api/gallery/", "/api/v1/")

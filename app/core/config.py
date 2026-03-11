@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     api_secret_key: str = os.getenv("API_SECRET_KEY", "default-secret")
     session_secret: str = os.getenv("SESSION_SECRET", "qi-session-secret-change-me")
 
+    # Security
+    cookie_secure: bool = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+
     # Langfuse
     langfuse_secret_key: str = os.getenv("LANGFUSE_SECRET_KEY", "")
     langfuse_public_key: str = os.getenv("LANGFUSE_PUBLIC_KEY", "")
