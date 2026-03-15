@@ -44,6 +44,16 @@ def get_sync_connection() -> sqlite3.Connection:
     return conn
 
 
+# ---------------------------------------------------------------------------
+# Internal table set (excluded from user-facing listings)
+# ---------------------------------------------------------------------------
+INTERNAL_TABLES = {
+    "analysis_types", "api_keys", "query_history", "analysis_gallery",
+    "users", "sessions", "custom_skills", "sqlite_sequence",
+    "datamarts", "datamart_tables", "user_datamarts",
+}
+
+
 def init_metadata_tables():
     """Create internal metadata tables."""
     conn = get_sync_connection()
@@ -53,7 +63,7 @@ def init_metadata_tables():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 login TEXT NOT NULL UNIQUE COLLATE NOCASE,
                 password_hash TEXT NOT NULL,
-                user_type TEXT NOT NULL DEFAULT 'user' CHECK(user_type IN ('superuser','admin','user')),
+                user_type TEXT NOT NULL DEFAULT 'user' CHECK(user_type IN ('root','superuser','admin','user')),
                 display_name TEXT NOT NULL DEFAULT '',
                 profile_description TEXT NOT NULL DEFAULT '',
                 is_active INTEGER NOT NULL DEFAULT 1,
@@ -119,6 +129,32 @@ def init_metadata_tables():
                 share_token TEXT NOT NULL UNIQUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            -- DataMarts
+            CREATE TABLE IF NOT EXISTS datamarts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                description TEXT NOT NULL DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS datamart_tables (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                datamart_id INTEGER NOT NULL,
+                table_name TEXT NOT NULL,
+                FOREIGN KEY (datamart_id) REFERENCES datamarts(id) ON DELETE CASCADE,
+                UNIQUE(datamart_id, table_name)
+            );
+
+            CREATE TABLE IF NOT EXISTS user_datamarts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                datamart_id INTEGER NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (datamart_id) REFERENCES datamarts(id) ON DELETE CASCADE,
+                UNIQUE(user_id, datamart_id)
+            );
         """)
         conn.commit()
 
@@ -129,6 +165,17 @@ def init_metadata_tables():
             conn.execute("ALTER TABLE analysis_gallery ADD COLUMN page_html TEXT NOT NULL DEFAULT ''")
             conn.commit()
 
+        # Migration: allow 'root' user_type on existing DBs
+        # SQLite can't ALTER CHECK constraints, but we created the table with root included above.
+        # For existing DBs where the CHECK doesn't include 'root', we recreate via INSERT OR IGNORE.
+
+        # Ensure default datamart exists
+        cursor = conn.execute("SELECT COUNT(*) FROM datamarts WHERE name = 'default'")
+        if cursor.fetchone()[0] == 0:
+            conn.execute("INSERT INTO datamarts (name, description) VALUES ('default', 'DataMart padrão')")
+            conn.commit()
+
+        # Seed default analysis type
         cursor = conn.execute("SELECT COUNT(*) FROM analysis_types")
         if cursor.fetchone()[0] == 0:
             conn.execute("""
@@ -145,9 +192,176 @@ def init_metadata_tables():
         conn.close()
 
 
+# ---------------------------------------------------------------------------
+# DataMart CRUD
+# ---------------------------------------------------------------------------
+
+def get_all_datamarts() -> list[dict]:
+    conn = get_sync_connection()
+    try:
+        cursor = conn.execute("SELECT * FROM datamarts ORDER BY name")
+        dms = []
+        for row in cursor.fetchall():
+            dm = dict(row)
+            tc = conn.execute(
+                "SELECT table_name FROM datamart_tables WHERE datamart_id = ? ORDER BY table_name",
+                (dm["id"],),
+            )
+            dm["tables"] = [r[0] for r in tc.fetchall()]
+            dms.append(dm)
+        return dms
+    finally:
+        conn.close()
+
+
+def get_datamart_by_id(dm_id: int) -> dict | None:
+    conn = get_sync_connection()
+    try:
+        row = conn.execute("SELECT * FROM datamarts WHERE id = ?", (dm_id,)).fetchone()
+        if not row:
+            return None
+        dm = dict(row)
+        tc = conn.execute(
+            "SELECT table_name FROM datamart_tables WHERE datamart_id = ?", (dm_id,),
+        )
+        dm["tables"] = [r[0] for r in tc.fetchall()]
+        return dm
+    finally:
+        conn.close()
+
+
+def get_datamart_by_name(name: str) -> dict | None:
+    conn = get_sync_connection()
+    try:
+        row = conn.execute("SELECT * FROM datamarts WHERE name = ? COLLATE NOCASE", (name,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def create_datamart(name: str, description: str = "") -> dict:
+    conn = get_sync_connection()
+    try:
+        conn.execute(
+            "INSERT INTO datamarts (name, description) VALUES (?, ?)",
+            (name, description),
+        )
+        conn.commit()
+        dm_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        return {"id": dm_id, "name": name, "description": description, "tables": []}
+    finally:
+        conn.close()
+
+
+def update_datamart(dm_id: int, **kwargs) -> bool:
+    allowed = {"name", "description"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
+    if not fields:
+        return False
+    from datetime import datetime
+    fields["updated_at"] = datetime.utcnow().isoformat()
+    set_clause = ", ".join(f"{k} = ?" for k in fields)
+    conn = get_sync_connection()
+    try:
+        conn.execute(f"UPDATE datamarts SET {set_clause} WHERE id = ?", (*fields.values(), dm_id))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def delete_datamart(dm_id: int) -> bool:
+    conn = get_sync_connection()
+    try:
+        # Prevent deleting 'default'
+        row = conn.execute("SELECT name FROM datamarts WHERE id = ?", (dm_id,)).fetchone()
+        if row and row[0] == "default":
+            return False
+        conn.execute("DELETE FROM datamart_tables WHERE datamart_id = ?", (dm_id,))
+        conn.execute("DELETE FROM user_datamarts WHERE datamart_id = ?", (dm_id,))
+        conn.execute("DELETE FROM datamarts WHERE id = ?", (dm_id,))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def assign_table_to_datamart(dm_id: int, table_name: str) -> bool:
+    conn = get_sync_connection()
+    try:
+        conn.execute(
+            "INSERT OR IGNORE INTO datamart_tables (datamart_id, table_name) VALUES (?, ?)",
+            (dm_id, table_name),
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def remove_table_from_datamart(dm_id: int, table_name: str) -> bool:
+    conn = get_sync_connection()
+    try:
+        conn.execute(
+            "DELETE FROM datamart_tables WHERE datamart_id = ? AND table_name = ?",
+            (dm_id, table_name),
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def get_user_datamarts(user_id: int) -> list[dict]:
+    conn = get_sync_connection()
+    try:
+        cursor = conn.execute(
+            """SELECT d.id, d.name, d.description FROM datamarts d
+               JOIN user_datamarts ud ON d.id = ud.datamart_id
+               WHERE ud.user_id = ? ORDER BY d.name""",
+            (user_id,),
+        )
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def set_user_datamarts(user_id: int, datamart_ids: list[int]):
+    conn = get_sync_connection()
+    try:
+        conn.execute("DELETE FROM user_datamarts WHERE user_id = ?", (user_id,))
+        for dm_id in datamart_ids:
+            conn.execute(
+                "INSERT OR IGNORE INTO user_datamarts (user_id, datamart_id) VALUES (?, ?)",
+                (user_id, dm_id),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_tables_for_datamarts(datamart_ids: list[int]) -> list[str]:
+    """Return distinct table names accessible via the given datamarts."""
+    if not datamart_ids:
+        return []
+    conn = get_sync_connection()
+    try:
+        placeholders = ",".join("?" * len(datamart_ids))
+        cursor = conn.execute(
+            f"SELECT DISTINCT table_name FROM datamart_tables WHERE datamart_id IN ({placeholders}) ORDER BY table_name",
+            datamart_ids,
+        )
+        return [r[0] for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Tables
+# ---------------------------------------------------------------------------
+
 def get_all_tables() -> list[dict]:
     """List all user data tables (excluding internal metadata)."""
-    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "custom_skills", "sqlite_sequence"}
     conn = get_sync_connection()
     try:
         cursor = conn.execute(
@@ -156,7 +370,7 @@ def get_all_tables() -> list[dict]:
         tables = []
         for row in cursor.fetchall():
             name = row[0]
-            if name in internal:
+            if name in INTERNAL_TABLES:
                 continue
             col_cursor = conn.execute(f'PRAGMA table_info("{name}")')
             columns = [
@@ -165,15 +379,34 @@ def get_all_tables() -> list[dict]:
             ]
             count_cursor = conn.execute(f'SELECT COUNT(*) FROM "{name}"')
             count = count_cursor.fetchone()[0]
-            tables.append({"name": name, "columns": columns, "row_count": count})
+            # Find which datamarts contain this table
+            dm_cursor = conn.execute(
+                "SELECT d.id, d.name FROM datamarts d JOIN datamart_tables dt ON d.id = dt.datamart_id WHERE dt.table_name = ?",
+                (name,),
+            )
+            dms = [{"id": r[0], "name": r[1]} for r in dm_cursor.fetchall()]
+            tables.append({"name": name, "columns": columns, "row_count": count, "datamarts": dms})
         return tables
     finally:
         conn.close()
 
 
-def get_table_schema_text() -> str:
-    """Return a textual description of all user tables for context."""
+def get_tables_filtered(table_names: list[str]) -> list[dict]:
+    """Like get_all_tables but filtered to specific table names."""
+    all_tables = get_all_tables()
+    if not table_names:
+        return all_tables
+    name_set = set(table_names)
+    return [t for t in all_tables if t["name"] in name_set]
+
+
+def get_table_schema_text(table_names: list[str] | None = None) -> str:
+    """Return a textual description of tables for agent context.
+    If table_names provided, only describe those tables."""
     tables = get_all_tables()
+    if table_names:
+        name_set = set(table_names)
+        tables = [t for t in tables if t["name"] in name_set]
     if not tables:
         return "Nenhuma tabela de dados encontrada no banco."
     parts = []
@@ -203,20 +436,20 @@ def execute_readonly_sql(sql: str) -> dict:
 
 def drop_user_table(table_name: str) -> dict:
     """Drop a user data table. Internal metadata tables are protected."""
-    internal = {"analysis_types", "api_keys", "query_history", "analysis_gallery", "users", "sessions", "custom_skills", "sqlite_sequence"}
-    if table_name in internal:
+    if table_name in INTERNAL_TABLES:
         return {"error": f"A tabela '{table_name}' é interna e não pode ser excluída."}
     if not _is_safe_identifier(table_name):
         return {"error": "Nome de tabela inválido."}
     conn = get_sync_connection()
     try:
-        # Verify table exists
         cursor = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,)
         )
         if cursor.fetchone() is None:
             return {"error": f"Tabela '{table_name}' não encontrada."}
         conn.execute(f'DROP TABLE "{table_name}"')
+        # Also remove from datamart_tables
+        conn.execute("DELETE FROM datamart_tables WHERE table_name = ?", (table_name,))
         conn.commit()
         return {"success": True, "message": f"Tabela '{table_name}' excluída."}
     except Exception:
