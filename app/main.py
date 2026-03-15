@@ -10,7 +10,7 @@ from app.api.routes import router as api_router, COOKIE_NAME
 
 app = FastAPI(
     title="Quick Insights",
-    description="Consulte seus dados usando linguagem natural com Deep Agents + OpenAI",
+    description="Consulte seus dados usando linguagem natural e obtenha insights rápidos e precisos.",
     version="2.1.0",
 )
 
@@ -26,7 +26,14 @@ async def security_headers_middleware(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+    response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data:; "
+            "connect-src 'self'"
+        )
     return response
 
 
