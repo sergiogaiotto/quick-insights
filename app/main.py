@@ -10,7 +10,7 @@ from app.api.routes import router as api_router, COOKIE_NAME
 
 app = FastAPI(
     title="Quick Insights",
-    description="Consulte seus dados usando linguagem natural e obtenha insights rápidos e precisos.",
+    description="Consulte seus dados usando linguagem natural com Deep Agents + OpenAI",
     version="2.1.0",
 )
 
@@ -26,7 +26,13 @@ async def security_headers_middleware(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = (
+
+    # Standalone HTML pages (PyGWalker, Chart.js, Analytics) load external CDNs
+    # and open in new tabs — do NOT apply restrictive CSP to them.
+    path = request.url.path
+    standalone_prefixes = ("/api/explore", "/api/chart", "/api/analytics", "/api/gallery/")
+    if not any(path.startswith(p) for p in standalone_prefixes):
+        response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
