@@ -10,7 +10,7 @@ from app.api.routes import router as api_router, COOKIE_NAME
 
 app = FastAPI(
     title="Quick Insights",
-    description="Consulte seus dados usando linguagem natural com Deep Agents + OpenAI",
+    description="Consulte seus dados usando linguagem natural e obtenha insights instantâneos. Conecte-se aos bancos de dados, explore seus dados e crie visualizações interativas sem escrever uma única linha de código.",
     version="2.1.0",
 )
 
