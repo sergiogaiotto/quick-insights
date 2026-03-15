@@ -66,15 +66,15 @@ async function openChartMenu(btn) {
         options = data.options || [];
     } catch(e) {
         options = [
-            {type:'auto',label:'Auto (LLM)',icon:'\u2728',suitable:true},
-            {type:'bar',label:'Barras',icon:'\uD83D\uDCCA',suitable:true},
-            {type:'line',label:'Linhas',icon:'\uD83D\uDCC8',suitable:true},
-            {type:'scatter',label:'Dispersão',icon:'\u26A1',suitable:true},
-            {type:'area',label:'Área',icon:'\uD83C\uDFD4',suitable:true},
-            {type:'pie',label:'Pizza',icon:'\uD83E\uDD67',suitable:true},
-            {type:'doughnut',label:'Rosca',icon:'\uD83C\uDF69',suitable:true},
-            {type:'radar',label:'Radar',icon:'\uD83D\uDD78',suitable:true},
-            {type:'polarArea',label:'Polar',icon:'\uD83C\uDFAF',suitable:true},
+            {type:'auto',label:'Auto (LLM)',icon:'*',suitable:true},
+            {type:'bar',label:'Barras',icon:'||',suitable:true},
+            {type:'line',label:'Linhas',icon:'/\\',suitable:true},
+            {type:'scatter',label:'Dispersao',icon:'.:',suitable:true},
+            {type:'area',label:'Area',icon:'~',suitable:true},
+            {type:'pie',label:'Pizza',icon:'O',suitable:true},
+            {type:'doughnut',label:'Rosca',icon:'()',suitable:true},
+            {type:'radar',label:'Radar',icon:'<>',suitable:true},
+            {type:'polarArea',label:'Polar',icon:'+',suitable:true},
         ];
     }
     showChartPopup(btn, options);
