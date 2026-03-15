@@ -15,21 +15,10 @@
                 extend: {
                     colors: {
                         fg: {
-                            900: '#0a0c10',
-                            800: '#0d1117',
-                            700: '#161b22',
-                            600: '#1c2128',
-                            500: '#21262d',
-                            border: '#30363d',
-                            muted: '#8b949e',
-                            text: '#c9d1d9',
-                            bright: '#e6edf3',
-                            accent: '#ff6347',
-                            'accent-hover': '#ff4500',
-                            green: '#39d353',
-                            'green-dim': '#0e4429',
-                            orange: '#ff6347',
-                            blue: '#58a6ff',
+                            900: '#0a0c10', 800: '#0d1117', 700: '#161b22', 600: '#1c2128',
+                            500: '#21262d', border: '#30363d', muted: '#8b949e', text: '#c9d1d9',
+                            bright: '#e6edf3', accent: '#ff6347', 'accent-hover': '#ff4500',
+                            green: '#39d353', 'green-dim': '#0e4429', orange: '#ff6347', blue: '#58a6ff',
                         }
                     },
                     fontFamily: {
@@ -43,78 +32,31 @@
     <style>
         body { font-family: 'Space Grotesk', system-ui, sans-serif; }
         code, pre, .font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
-
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #484f58; }
-
-        /* Animations */
         .fade-in { animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
         .pulse-dot { animation: pulse 1.8s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
         .shimmer { background: linear-gradient(90deg, #161b22 25%, #1c2128 50%, #161b22 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-        /* Table */
         .table-container { max-height: 420px; overflow: auto; }
         .table-container table { border-collapse: collapse; width: 100%; }
         .table-container th { position: sticky; top: 0; z-index: 1; }
-
-        /* Active tab indicator */
         .tab-active { color: #ff6347; position: relative; }
-        .tab-active::after {
-            content: '';
-            position: absolute;
-            bottom: -12px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: #ff6347;
-            border-radius: 1px;
-        }
-
-        /* Glow accent */
+        .tab-active::after { content: ''; position: absolute; bottom: -12px; left: 0; right: 0; height: 2px; background: #ff6347; border-radius: 1px; }
         .glow-accent { box-shadow: 0 0 20px rgba(255, 99, 71, 0.08); }
-
-        /* Markdown styling */
         .prose-custom p { margin-bottom: 0.5em; }
         .prose-custom ul, .prose-custom ol { margin: 0.5em 0; padding-left: 1.5em; }
         .prose-custom li { margin-bottom: 0.25em; }
         .prose-custom strong { color: #e6edf3; }
         .prose-custom code { background: #21262d; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.85em; }
-
-        /* Clickable suggestion links */
-        .qi-suggestion-link {
-            color: #58a6ff;
-            text-decoration: none;
-            cursor: pointer;
-            border-bottom: 1px dashed rgba(88,166,255,0.3);
-            transition: all 0.15s;
-        }
-        .qi-suggestion-link:hover {
-            color: #ff6347;
-            border-bottom-color: rgba(255,99,71,0.4);
-        }
-        .qi-suggestion-icon {
-            font-size: 9px;
-            color: #58a6ff;
-            opacity: 0.5;
-            transition: opacity 0.15s;
-            vertical-align: middle;
-        }
-        .qi-suggestion-link:hover .qi-suggestion-icon,
-        li:hover .qi-suggestion-icon,
-        p:hover .qi-suggestion-icon {
-            opacity: 1;
-            color: #ff6347;
-        }
-
-        /* Drop zone */
+        .qi-suggestion-link { color: #58a6ff; text-decoration: none; cursor: pointer; border-bottom: 1px dashed rgba(88,166,255,0.3); transition: all 0.15s; }
+        .qi-suggestion-link:hover { color: #ff6347; border-bottom-color: rgba(255,99,71,0.4); }
+        .qi-suggestion-icon { font-size: 9px; color: #58a6ff; opacity: 0.5; transition: opacity 0.15s; vertical-align: middle; }
+        .qi-suggestion-link:hover .qi-suggestion-icon, li:hover .qi-suggestion-icon, p:hover .qi-suggestion-icon { opacity: 1; color: #ff6347; }
         .drop-active { border-color: #ff6347 !important; background: rgba(255, 99, 71, 0.04); }
     </style>
 </head>
@@ -128,8 +70,7 @@
                 <span class="text-fg-bright">QUICK</span><span class="text-fg-accent">INSIGHTS</span>
             </h1>
             <span class="hidden sm:flex items-center gap-1.5 text-[10px] text-fg-muted border-l border-fg-border pl-3 uppercase tracking-widest">
-                <span class="w-1.5 h-1.5 rounded-full bg-fg-green"></span>
-                Deep Agent 
+                <span class="w-1.5 h-1.5 rounded-full bg-fg-green"></span> Deep Agent
             </span>
         </div>
         <nav class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium">
@@ -151,9 +92,7 @@
                         <div class="text-xs font-semibold text-fg-bright" id="dropdownUserName"></div>
                         <div class="text-[10px] text-fg-muted font-mono" id="dropdownUserType"></div>
                     </div>
-                    <button onclick="doLogout()" class="w-full text-left px-3 py-2 text-xs text-fg-muted hover:text-red-400 hover:bg-fg-600 transition-colors">
-                        Sair
-                    </button>
+                    <button onclick="doLogout()" class="w-full text-left px-3 py-2 text-xs text-fg-muted hover:text-red-400 hover:bg-fg-600 transition-colors">Sair</button>
                 </div>
             </div>
         </nav>
@@ -164,7 +103,6 @@
 
 <!-- ===================== QUERY TAB ===================== -->
 <section id="panel-query" class="tab-panel">
-    <!-- Analysis type + badge -->
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
         <div class="flex-1">
             <label class="text-[10px] text-fg-muted uppercase tracking-wider mb-1 block">Tipo de Análise</label>
@@ -173,14 +111,13 @@
             </select>
         </div>
         <div id="activeSkillsBadge" class="hidden self-end">
-            <div class="flex items-center gap-1.5 bg-fg-blue/10 border border-fg-blue/20 rounded-lg px-3 py-2 cursor-pointer hover:bg-fg-blue/15 transition" onclick="showTab('skills')" title="Skills ativas — clique para gerenciar">
+            <div class="flex items-center gap-1.5 bg-fg-blue/10 border border-fg-blue/20 rounded-lg px-3 py-2 cursor-pointer hover:bg-fg-blue/15 transition" onclick="showTab('skills')" title="Skills ativas">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-fg-blue"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                 <span class="text-xs text-fg-blue font-medium" id="activeSkillsCount">0 skills</span>
             </div>
         </div>
     </div>
 
-    <!-- Suggestions -->
     <div class="flex flex-wrap gap-2 mb-4">
         <span class="text-[10px] text-fg-muted uppercase tracking-wider self-center mr-1">Exemplos</span>
         <button onclick="useSuggestion(this)" class="text-xs bg-fg-700 border border-fg-border rounded-full px-3 py-1.5 hover:border-fg-accent hover:text-fg-accent transition-all">Quais tabelas existem?</button>
@@ -189,47 +126,12 @@
         <button onclick="useSuggestion(this)" class="text-xs bg-fg-700 border border-fg-border rounded-full px-3 py-1.5 hover:border-fg-accent hover:text-fg-accent transition-all">Quais são os padrões dos dados?</button>
     </div>
 
-    <!-- Comparação Período a Período -->
-    <div id="comparePanel" class="hidden mb-4 bg-fg-700/50 border border-fg-border rounded-xl p-4">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-xs font-bold text-fg-blue uppercase tracking-wider flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                Comparação Período a Período
-            </h3>
-            <button onclick="toggleComparePanel()" class="text-xs text-fg-muted hover:text-red-400 transition">Fechar</button>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <div>
-                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Granularidade</label>
-                <select id="compareGranularity" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs focus:border-fg-blue focus:outline-none">
-                    <option value="mes">Mês</option>
-                    <option value="ano">Ano</option>
-                </select>
-            </div>
-            <div>
-                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Período 1</label>
-                <input id="comparePeriod1" type="text" placeholder="ex: 2024-01" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs font-mono focus:border-fg-blue focus:outline-none">
-            </div>
-            <div>
-                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Período 2</label>
-                <input id="comparePeriod2" type="text" placeholder="ex: 2025-01" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs font-mono focus:border-fg-blue focus:outline-none">
-            </div>
-            <div>
-                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Métrica (opcional)</label>
-                <input id="compareMetric" type="text" placeholder="ex: vendas, receita" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs focus:border-fg-blue focus:outline-none">
-            </div>
-            <div class="flex items-end">
-                <button onclick="runComparison()" class="w-full bg-fg-blue hover:opacity-90 text-white px-4 py-2 rounded-lg text-xs font-semibold transition">
-                    Comparar
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- DataMart Selector (v2.1) -->
+    <div id="datamartSelector" class="hidden flex flex-wrap gap-2 mb-3 items-center"></div>
 
     <!-- Selected Skills Badge -->
     <div id="selectedSkillsBadge" class="hidden mb-3"></div>
 
-    <!-- Chat area -->
     <div id="chatArea" class="bg-fg-800 rounded-xl border border-fg-border min-h-[320px] max-h-[62vh] overflow-y-auto p-5 mb-4 space-y-4 glow-accent">
         <div class="text-center text-fg-muted text-sm py-16">
             <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-fg-700 border border-fg-border flex items-center justify-center">
@@ -238,11 +140,10 @@
                 </svg>
             </div>
             <p class="font-medium text-fg-text">Faça uma pergunta sobre seus dados</p>
-            <p class="text-xs mt-1.5 text-fg-muted">Deep Agent com planejamento, SQL automático e visualização interativa via PyGWalker</p>
+            <p class="text-xs mt-1.5 text-fg-muted">Deep Agent com planejamento, SQL automático e visualização interativa</p>
         </div>
     </div>
 
-    <!-- Input area -->
     <div class="flex gap-2">
         <input id="queryInput" type="text" placeholder="Digite sua pergunta em linguagem natural..."
                class="flex-1 bg-fg-700 border border-fg-border rounded-xl px-4 py-3 text-sm focus:border-fg-accent focus:outline-none focus:ring-1 focus:ring-fg-accent/30 transition placeholder:text-fg-muted/50"
@@ -257,19 +158,27 @@
             <option value="0">Todos</option>
         </select>
         <button onclick="sendQuery()" id="btnSend"
-                class="bg-fg-accent hover:bg-fg-accent-hover text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95">
-            Enviar
-        </button>
+                class="bg-fg-accent hover:bg-fg-accent-hover text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95">Enviar</button>
     </div>
 </section>
 
 <!-- ===================== TABLES TAB ===================== -->
 <section id="panel-tables" class="tab-panel hidden">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Upload -->
         <div class="lg:col-span-1">
             <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
                 <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-3">Upload Excel</h2>
+                <!-- DataMart selector for upload (v2.1) -->
+                <div class="mb-3">
+                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">DataMart</label>
+                    <div class="flex gap-2">
+                        <select id="uploadDatamart" class="flex-1 bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs font-mono focus:border-fg-accent focus:outline-none">
+                            <option value="default">default</option>
+                        </select>
+                        <input id="uploadDatamartNew" type="text" placeholder="ou criar novo..."
+                               class="flex-1 bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-xs font-mono focus:border-fg-accent focus:outline-none">
+                    </div>
+                </div>
                 <div id="dropZone"
                      class="border-2 border-dashed border-fg-border rounded-xl p-8 text-center cursor-pointer hover:border-fg-accent/50 transition-all"
                      onclick="document.getElementById('fileInput').click()"
@@ -287,22 +196,16 @@
                 <div id="uploadStatus" class="mt-3 text-xs hidden"></div>
             </div>
         </div>
-
-        <!-- Tables list -->
         <div class="lg:col-span-2">
             <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Tabelas no Banco</h2>
                     <button onclick="loadTables()" class="text-xs text-fg-muted hover:text-fg-accent transition">Atualizar</button>
                 </div>
-                <div id="tablesList" class="space-y-2">
-                    <p class="text-xs text-fg-muted">Carregando...</p>
-                </div>
+                <div id="tablesList" class="space-y-2"><p class="text-xs text-fg-muted">Carregando...</p></div>
             </div>
         </div>
     </div>
-
-    <!-- Table preview -->
     <div id="tablePreview" class="mt-6 hidden">
         <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
             <div class="flex items-center justify-between mb-3">
@@ -312,68 +215,53 @@
             <div id="previewContent" class="table-container"></div>
         </div>
     </div>
+    <!-- DataMart Management (v2.1) -->
+    <div class="mt-6">
+        <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-xs font-bold text-fg-blue uppercase tracking-wider">DataMarts</h2>
+                <button onclick="createDatamart()" class="text-xs bg-fg-blue/20 text-fg-blue border border-fg-blue/30 px-2.5 py-1 rounded-lg hover:bg-fg-blue/30 transition">+ Novo</button>
+            </div>
+            <div id="datamartAdminList" class="space-y-2"><p class="text-xs text-fg-muted">Carregando...</p></div>
+        </div>
+    </div>
 </section>
 
 <!-- ===================== SKILLS TAB ===================== -->
 <section id="panel-skills" class="tab-panel hidden">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Skill Editor -->
         <div class="lg:col-span-2">
             <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Editor de Skill</h2>
-                    <button onclick="newSkill()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">
-                        Nova Skill
-                    </button>
+                    <!-- v2.1: Export/Import buttons -->
+                    <div class="flex gap-2">
+                        <button onclick="newSkill()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">Nova Skill</button>
+                        <button onclick="exportSkills()" class="bg-fg-green/20 text-fg-green border border-fg-green/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition hover:bg-fg-green/30">Exportar</button>
+                        <button onclick="importSkills()" class="bg-fg-blue/20 text-fg-blue border border-fg-blue/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition hover:bg-fg-blue/30">Importar</button>
+                    </div>
                 </div>
                 <input type="hidden" id="skillEditId">
                 <div class="space-y-3">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome</label>
-                            <input id="skillName" type="text" placeholder="ex: analise-financeira" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Descrição curta</label>
-                            <input id="skillDesc" type="text" placeholder="Quando e para que usar esta skill" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none">
-                        </div>
+                        <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome</label><input id="skillName" type="text" placeholder="ex: analise-financeira" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none"></div>
+                        <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Descrição curta</label><input id="skillDesc" type="text" placeholder="Quando e para que usar esta skill" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none"></div>
                     </div>
-                    <div>
-                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Conteúdo da Skill (Markdown)</label>
-                        <textarea id="skillContent" rows="18" placeholder="# Instruções para o agente&#10;&#10;Descreva aqui o conhecimento especializado, regras de interpretação, exemplos de análise, métricas relevantes, formato de resposta, etc.&#10;&#10;O agente usará este conteúdo como contexto adicional ao responder consultas enquanto a skill estiver ativa." class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none resize-y leading-relaxed"></textarea>
-                    </div>
+                    <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Conteúdo da Skill (Markdown)</label><textarea id="skillContent" rows="18" placeholder="# Instruções para o agente..." class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none resize-y leading-relaxed"></textarea></div>
                     <div class="flex gap-2">
                         <button onclick="saveSkill()" class="bg-fg-green hover:opacity-90 text-fg-900 px-4 py-1.5 rounded-lg text-xs font-semibold transition">Salvar</button>
                         <button onclick="newSkill()" class="bg-fg-500 text-fg-muted px-4 py-1.5 rounded-lg text-xs transition hover:text-fg-text">Limpar</button>
                     </div>
                 </div>
             </div>
-
-            <!-- Help -->
-            <div class="bg-fg-800 border border-fg-border rounded-xl p-5 mt-6">
-                <h3 class="text-xs font-bold text-fg-blue uppercase tracking-wider mb-3">Como criar Skills</h3>
-                <div class="text-xs text-fg-muted space-y-2 leading-relaxed">
-                    <p>Skills expandem a capacidade do agente ao responder consultas. Cada skill ativa é injetada no contexto do Deep Agent como conhecimento especializado.</p>
-                    <p class="text-fg-text font-medium">Exemplos de uso:</p>
-                    <p><span class="text-fg-green font-mono">Análise Financeira</span> — regras para interpretar DRE, balanço patrimonial, indicadores de liquidez, rentabilidade. O agente passa a calcular e explicar índices financeiros automaticamente.</p>
-                    <p><span class="text-fg-green font-mono">Segmentação RFM</span> — instruções para calcular Recência, Frequência e Valor Monetário a partir de dados transacionais, classificar clientes e gerar recomendações.</p>
-                    <p><span class="text-fg-green font-mono">Análise de Churn</span> — métricas de retenção, cohort analysis, indicadores preditivos, formato de relatório com ações recomendadas.</p>
-                    <p><span class="text-fg-green font-mono">KPI Dashboard</span> — definição de KPIs específicos do negócio, fórmulas de cálculo, metas, semáforos de performance.</p>
-                    <p class="text-fg-text mt-2">Use Markdown no conteúdo: cabeçalhos, listas, exemplos, fórmulas. Quanto mais contexto e exemplos, melhor a interpretação do agente.</p>
-                </div>
-            </div>
         </div>
-
-        <!-- Skills List -->
         <div class="lg:col-span-1">
             <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Skills Cadastradas</h2>
                     <button onclick="loadSkills()" class="text-xs text-fg-muted hover:text-fg-accent transition">Atualizar</button>
                 </div>
-                <div id="skillsList" class="space-y-2">
-                    <p class="text-xs text-fg-muted">Carregando...</p>
-                </div>
+                <div id="skillsList" class="space-y-2"><p class="text-xs text-fg-muted">Carregando...</p></div>
             </div>
         </div>
     </div>
@@ -388,33 +276,18 @@
                     <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Tipos de Análise</h2>
                     <button onclick="newAnalysisType()" class="text-xs bg-fg-green/20 text-fg-green border border-fg-green/30 px-2.5 py-1 rounded-lg hover:bg-fg-green/30 transition">+ Novo</button>
                 </div>
-                <div id="analysisTypesList" class="space-y-2">
-                    <p class="text-xs text-fg-muted">Carregando...</p>
-                </div>
+                <div id="analysisTypesList" class="space-y-2"><p class="text-xs text-fg-muted">Carregando...</p></div>
             </div>
         </div>
-
         <div class="lg:col-span-2">
             <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
                 <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-4" id="editorTitle">Selecione um tipo de análise</h2>
                 <form id="analysisForm" class="space-y-4 hidden">
                     <input type="hidden" id="editId">
-                    <div>
-                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome</label>
-                        <input id="editName" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">System Prompt</label>
-                        <textarea id="editPrompt" rows="5" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea>
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Guardrails de Entrada</label>
-                        <textarea id="editGuardIn" rows="3" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea>
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Guardrails de Saída</label>
-                        <textarea id="editGuardOut" rows="3" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea>
-                    </div>
+                    <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome</label><input id="editName" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition"></div>
+                    <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">System Prompt</label><textarea id="editPrompt" rows="5" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea></div>
+                    <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Guardrails de Entrada</label><textarea id="editGuardIn" rows="3" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea></div>
+                    <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Guardrails de Saída</label><textarea id="editGuardOut" rows="3" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-y font-mono text-xs transition"></textarea></div>
                     <div class="flex gap-2 pt-1">
                         <button type="button" onclick="saveAnalysisType()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Salvar</button>
                         <button type="button" onclick="deleteAnalysisType()" id="btnDelete" class="bg-fg-500 hover:bg-red-900/50 text-fg-muted hover:text-red-400 px-4 py-2 rounded-lg text-sm transition hidden">Excluir</button>
@@ -432,12 +305,9 @@
             <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Galeria de Análises</h2>
             <span id="galleryCount" class="text-[10px] text-fg-muted font-mono"></span>
         </div>
-        <div id="galleryList" class="space-y-3">
-            <p class="text-xs text-fg-muted">Carregando...</p>
-        </div>
+        <div id="galleryList" class="space-y-3"><p class="text-xs text-fg-muted">Carregando...</p></div>
         <div id="galleryEmpty" class="hidden text-center py-10">
             <p class="text-fg-muted text-sm">Nenhuma análise salva.</p>
-            <p class="text-fg-muted text-xs mt-1">Use o botão "Salvar na Galeria" na tela Explorar.</p>
         </div>
     </div>
 </section>
@@ -456,35 +326,19 @@
                     <p class="text-[10px] text-fg-green uppercase tracking-wider mb-1">Chave gerada — copie agora</p>
                     <code id="keyValue" class="text-xs text-fg-bright break-all font-mono"></code>
                 </div>
-                <div id="keysList" class="space-y-2">
-                    <p class="text-xs text-fg-muted">Carregando...</p>
-                </div>
+                <div id="keysList" class="space-y-2"><p class="text-xs text-fg-muted">Carregando...</p></div>
             </div>
         </div>
-
         <div>
             <div class="bg-fg-800 border border-fg-border rounded-xl p-5">
                 <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-3">Documentação</h2>
                 <div class="space-y-4 text-xs">
                     <div>
                         <h3 class="text-fg-green font-mono font-bold mb-1.5">POST /api/v1/query</h3>
-                        <p class="text-fg-muted mb-2">Consultar dados via linguagem natural (autenticado)</p>
                         <pre class="bg-fg-900 rounded-lg p-3 overflow-x-auto text-fg-muted font-mono text-[11px] leading-relaxed border border-fg-border">curl -X POST http://localhost:8000/api/v1/query \
   -H "Content-Type: application/json" \
   -H "X-API-Key: SUA_CHAVE_AQUI" \
   -d '{"question": "Quais tabelas existem?"}'</pre>
-                    </div>
-                    <div>
-                        <h3 class="text-fg-green font-mono font-bold mb-1">Headers</h3>
-                        <p class="text-fg-muted"><code class="text-fg-accent font-mono bg-fg-900 px-1.5 py-0.5 rounded">X-API-Key</code> — Chave gerada nesta tela</p>
-                    </div>
-                    <div>
-                        <h3 class="text-fg-green font-mono font-bold mb-1">Segurança</h3>
-                        <p class="text-fg-muted">Chaves armazenadas com hash SHA256 + salt. Valor original nunca salvo.</p>
-                    </div>
-                    <div>
-                        <h3 class="text-fg-green font-mono font-bold mb-1">Stack</h3>
-                        <p class="text-fg-muted">Deep Agent · LangGraph · SQLDatabaseToolkit</p>
                     </div>
                 </div>
             </div>
@@ -492,43 +346,37 @@
     </div>
 </section>
 
-<!-- Users Panel (admin only) -->
+<!-- ===================== USERS TAB ===================== -->
 <section id="panel-users" class="tab-panel hidden">
     <div class="bg-fg-800 border border-fg-border rounded-xl p-5 glow-accent">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xs font-bold text-fg-accent uppercase tracking-wider">Gerenciamento de Usuários</h2>
-            <button onclick="showCreateUserForm()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">
-                Novo Usuário
-            </button>
+            <!-- v2.1: Export/Import buttons -->
+            <div class="flex gap-2">
+                <button onclick="showCreateUserForm()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">Novo Usuário</button>
+                <button onclick="exportUsers()" class="bg-fg-green/20 text-fg-green border border-fg-green/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:bg-fg-green/30">Exportar</button>
+                <button onclick="importUsers()" class="bg-fg-blue/20 text-fg-blue border border-fg-blue/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:bg-fg-blue/30">Importar</button>
+            </div>
         </div>
-
-        <!-- Create/Edit form (hidden by default) -->
         <div id="userFormPanel" class="hidden bg-fg-700 border border-fg-border rounded-lg p-4 mb-4">
             <h3 class="text-xs font-semibold text-fg-bright mb-3" id="userFormTitle">Novo Usuário</h3>
             <input type="hidden" id="userFormId">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Login</label>
-                    <input id="userFormLogin" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none">
-                </div>
-                <div>
-                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Senha</label>
-                    <input id="userFormPassword" type="password" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none" placeholder="Obrigatório para novo usuário">
-                </div>
-                <div>
-                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Tipo</label>
+                <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Login</label><input id="userFormLogin" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none"></div>
+                <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Senha</label><input id="userFormPassword" type="password" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm font-mono focus:border-fg-accent focus:outline-none" placeholder="Obrigatório para novo usuário"></div>
+                <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Tipo</label>
                     <select id="userFormType" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none">
                         <option value="user">Usuário Comum</option>
                         <option value="admin">Administrador</option>
+                        <option value="root">Root</option>
                     </select>
                 </div>
-                <div>
-                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome de Exibição</label>
-                    <input id="userFormName" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none">
-                </div>
+                <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Nome de Exibição</label><input id="userFormName" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none"></div>
+                <div class="sm:col-span-2"><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Descrição do Perfil</label><textarea id="userFormDesc" rows="2" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-none"></textarea></div>
+                <!-- v2.1: DataMart checkboxes -->
                 <div class="sm:col-span-2">
-                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Descrição do Perfil</label>
-                    <textarea id="userFormDesc" rows="2" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none resize-none"></textarea>
+                    <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">DataMarts</label>
+                    <div id="userFormDatamarts" class="flex flex-wrap gap-2 bg-fg-900 border border-fg-border rounded-lg p-2 max-h-[120px] overflow-y-auto"></div>
                 </div>
             </div>
             <div class="flex gap-2 mt-3">
@@ -536,26 +384,19 @@
                 <button onclick="hideUserForm()" class="bg-fg-500 text-fg-muted px-4 py-1.5 rounded-lg text-xs transition hover:text-fg-text">Cancelar</button>
             </div>
         </div>
-
         <div id="usersTableContainer" class="table-container rounded-lg border border-fg-border">
             <table class="min-w-full">
-                <thead>
-                    <tr class="bg-fg-700 text-fg-muted text-[10px] uppercase tracking-wider">
-                        <th class="px-4 py-2.5 text-left">Login</th>
-                        <th class="px-4 py-2.5 text-left">Nome</th>
-                        <th class="px-4 py-2.5 text-left">Tipo</th>
-                        <th class="px-4 py-2.5 text-left">Perfil</th>
-                        <th class="px-4 py-2.5 text-center">Status</th>
-                        <th class="px-4 py-2.5 text-left">Criado em</th>
-                        <th class="px-4 py-2.5 text-center">Ações</th>
-                    </tr>
-                </thead>
+                <thead><tr class="bg-fg-700 text-fg-muted text-[10px] uppercase tracking-wider">
+                    <th class="px-4 py-2.5 text-left">Login</th><th class="px-4 py-2.5 text-left">Nome</th>
+                    <th class="px-4 py-2.5 text-left">Tipo</th><th class="px-4 py-2.5 text-left">DataMarts</th>
+                    <th class="px-4 py-2.5 text-center">Status</th><th class="px-4 py-2.5 text-left">Criado em</th>
+                    <th class="px-4 py-2.5 text-center">Ações</th>
+                </tr></thead>
                 <tbody id="usersTableBody" class="text-sm divide-y divide-fg-border"></tbody>
             </table>
         </div>
     </div>
 </section>
-
 </main>
 
 <!-- Email Modal -->
@@ -563,14 +404,8 @@
     <div class="bg-fg-800 border border-fg-border rounded-xl p-6 w-full max-w-md mx-4 fade-in shadow-2xl">
         <h3 class="text-xs font-bold text-fg-accent uppercase tracking-wider mb-4">Enviar por Email</h3>
         <div class="space-y-3">
-            <div>
-                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Destinatário</label>
-                <input id="emailTo" type="email" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition">
-            </div>
-            <div>
-                <label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Assunto</label>
-                <input id="emailSubject" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition">
-            </div>
+            <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Destinatário</label><input id="emailTo" type="email" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition"></div>
+            <div><label class="text-[10px] text-fg-muted uppercase tracking-wider block mb-1">Assunto</label><input id="emailSubject" type="text" class="w-full bg-fg-900 border border-fg-border rounded-lg px-3 py-2 text-sm focus:border-fg-accent focus:outline-none transition"></div>
         </div>
         <div class="flex gap-2 mt-4">
             <button onclick="confirmSendEmail()" class="bg-fg-accent hover:bg-fg-accent-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Enviar</button>
@@ -579,14 +414,9 @@
     </div>
 </div>
 
-<!-- Footer -->
 <footer class="border-t border-fg-border mt-12 py-5 text-center">
-    <div class="font-mono text-sm font-bold">
-        <span class="text-fg-bright">QUICK</span><span class="text-fg-accent">INSIGHTS</span>
-    </div>
-    <p class="text-[10px] text-fg-muted mt-1.5 uppercase tracking-widest">
-        Deep Agent · by <a href="https://www.falagaiotto.com.br" target="_blank" class="text-fg-accent hover:underline">Fala Gaiotto</a>
-    </p>
+    <div class="font-mono text-sm font-bold"><span class="text-fg-bright">QUICK</span><span class="text-fg-accent">INSIGHTS</span></div>
+    <p class="text-[10px] text-fg-muted mt-1.5 uppercase tracking-widest">Deep Agent · by <a href="https://www.falagaiotto.com.br" target="_blank" class="text-fg-accent hover:underline">Fala Gaiotto</a></p>
 </footer>
 
 <script>
@@ -598,150 +428,40 @@ let lastQueryData = null;
 let lastQuestion = '';
 let selectedSkillIds = [];
 let allSkillsList = [];
+let currentUser = null;
 
 // ============================
 // Tabs
 // ============================
 function showTab(name) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-    document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.remove('tab-active');
-        b.classList.add('text-fg-muted');
-    });
+    document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('tab-active'); b.classList.add('text-fg-muted'); });
     document.getElementById('panel-' + name).classList.remove('hidden');
     const btn = document.getElementById('tab-' + name);
-    btn.classList.remove('text-fg-muted');
-    btn.classList.add('tab-active');
-
-    if (name === 'tables') loadTables();
+    btn.classList.remove('text-fg-muted'); btn.classList.add('tab-active');
+    if (name === 'tables') { loadTables(); loadDatamartsAdmin(); }
     if (name === 'config') loadAnalysisTypes();
     if (name === 'gallery') loadGallery();
     if (name === 'api') loadApiKeys();
     if (name === 'users') loadUsers();
     if (name === 'skills') loadSkills();
-
 }
+
+function useSuggestion(btn) { document.getElementById('queryInput').value = btn.textContent; sendQuery(); }
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 // ============================
 // Query
 // ============================
-function useSuggestion(btn) {
-    document.getElementById('queryInput').value = btn.textContent;
-    sendQuery();
-}
-
-// ============================
-// Comparison (Peer-to-Peer)
-// ============================
-function toggleComparePanel() {
-    const panel = document.getElementById('comparePanel');
-    panel.classList.toggle('hidden');
-    if (!panel.classList.contains('hidden')) {
-        document.getElementById('comparePeriod1').focus();
-    }
-}
-
-function runComparison() {
-    const granularity = document.getElementById('compareGranularity').value;
-    const p1 = document.getElementById('comparePeriod1').value.trim();
-    const p2 = document.getElementById('comparePeriod2').value.trim();
-    const metric = document.getElementById('compareMetric').value.trim();
-    if (!p1 || !p2) { alert('Informe os dois períodos.'); return; }
-
-    const granLabel = granularity === 'ano' ? 'ano' : 'mês';
-    let q = `Compare os resultados do ${granLabel} ${p1} com o ${granLabel} ${p2}`;
-    if (metric) q += `, focando na métrica "${metric}"`;
-    q += `. Apresente a variação absoluta e percentual entre os períodos, destaque os principais desvios e proponha novas análises de aprofundamento.`;
-
-    document.getElementById('comparePanel').classList.add('hidden');
-    document.getElementById('queryInput').value = q;
-    sendQuery();
-}
-
-// ============================
-// Clickable Suggestions in Responses
-// ============================
-function linkifySuggestions(html) {
-    // Convert numbered suggestions (1. / 2. / etc) and bullet items into clickable links
-    // Targets <li> contents that look like analysis proposals
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-
-    const items = tmp.querySelectorAll('li');
-    items.forEach(li => {
-        const text = li.textContent.trim();
-        // Skip very short items, code blocks, or items that already have links
-        if (text.length < 15 || li.querySelector('a, code, pre') || li.querySelector('.qi-suggestion-link')) return;
-
-        // Detect suggestion patterns (analysis proposals, questions, recommendations)
-        const isSuggestion = /^(analis|verific|compar|investig|identific|calcul|avali|monitor|segmentar|classific|estud|explor|mapear|cruzar|detalh|aprofund|agrupar|filtrar|correlacion|rankear|listar|mostrar|descobrir|qual|quais|como|por que|quanto|onde)/i.test(text)
-            || /\?$/.test(text)
-            || /^(faça|execute|gere|crie|realize|extraia|consulte|busque|determine)/i.test(text);
-
-        if (isSuggestion) {
-            // Preserve the original innerHTML but wrap the text content in a clickable element
-            const link = document.createElement('a');
-            link.href = '#';
-            link.className = 'qi-suggestion-link';
-            link.title = 'Clique para executar esta análise';
-            link.setAttribute('onclick', `event.preventDefault(); runSuggestion(this.dataset.q)`);
-            link.dataset.q = text;
-            link.innerHTML = li.innerHTML + ' <span class="qi-suggestion-icon">▶</span>';
-            li.innerHTML = '';
-            li.appendChild(link);
-        }
-    });
-
-    // Also handle standalone paragraphs that look like suggestions (common in numbered format without <li>)
-    const paras = tmp.querySelectorAll('p');
-    paras.forEach(p => {
-        const text = p.textContent.trim();
-        // Match "1. ...", "2. ...", "- ..." at start of paragraph
-        const match = text.match(/^(\d+[\.\)]\s*)(.+)/);
-        if (match && match[2].length > 15) {
-            const proposal = match[2];
-            const isSuggestion = /^(analis|verific|compar|investig|identific|calcul|avali|monitor|segmentar|classific|estud|explor|mapear|cruzar|detalh|aprofund|agrupar|filtrar|correlacion|rankear|listar|mostrar|descobrir|qual|quais|como|por que|quanto|onde|faça|execute|gere|crie|realize|extraia|consulte|busque|determine)/i.test(proposal);
-            if (isSuggestion) {
-                const prefix = match[1];
-                const link = document.createElement('a');
-                link.href = '#';
-                link.className = 'qi-suggestion-link';
-                link.title = 'Clique para executar esta análise';
-                link.setAttribute('onclick', `event.preventDefault(); runSuggestion(this.dataset.q)`);
-                link.dataset.q = proposal;
-                link.textContent = proposal;
-                p.innerHTML = prefix;
-                p.appendChild(link);
-                const icon = document.createElement('span');
-                icon.className = 'qi-suggestion-icon';
-                icon.textContent = ' ▶';
-                p.appendChild(icon);
-            }
-        }
-    });
-
-    return tmp.innerHTML;
-}
-
-function runSuggestion(text) {
-    document.getElementById('queryInput').value = text;
-    sendQuery();
-    // Scroll to input area
-    document.getElementById('queryInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
 async function sendQuery() {
     const input = document.getElementById('queryInput');
     const q = input.value.trim();
     if (!q) return;
-
     input.value = '';
     lastQuestion = q;
     const analysisTypeId = document.getElementById('analysisType').value || null;
-
     appendMessage('user', q);
     appendMessage('loading', '');
-
     try {
         const res = await fetch('/api/query', {
             method: 'POST',
@@ -752,19 +472,14 @@ async function sendQuery() {
                 conversation_context: conversationContext || null,
                 result_limit: parseInt(document.getElementById('resultLimit').value) || 0,
                 skill_ids: selectedSkillIds.length > 0 ? selectedSkillIds : null,
+                datamart_ids: getSelectedDatamartIds().length > 0 ? getSelectedDatamartIds() : null,
             }),
         });
         const data = await res.json();
         removeLoading();
-
-        if (data.detail) {
-            appendMessage('error', data.detail);
-            return;
-        }
-
+        if (data.detail) { appendMessage('error', data.detail); return; }
         lastQueryData = data.data;
         conversationContext = (conversationContext + '\n' + q + '\n' + (data.explanation || '')).slice(-2000);
-
         let html = '';
         if (data.sql_generated) {
             html += `<details class="mb-3 group"><summary class="text-[10px] text-fg-muted cursor-pointer hover:text-fg-accent transition uppercase tracking-wider font-mono">SQL Gerado</summary><pre class="mt-2 bg-fg-900 rounded-lg p-3 text-[11px] text-fg-green overflow-x-auto font-mono border border-fg-border leading-relaxed">${escapeHtml(data.sql_generated)}</pre></details>`;
@@ -778,27 +493,18 @@ async function sendQuery() {
             html += renderTable(data.data);
             html += renderActions();
         }
-
         appendMessage('assistant', html, true);
-    } catch (e) {
-        removeLoading();
-        appendMessage('error', 'Erro de conexão: ' + e.message);
-    }
+    } catch (e) { removeLoading(); appendMessage('error', 'Erro de conexão: ' + e.message); }
 }
 
 function renderTable(data) {
     if (!data.columns || !data.rows) return '';
-    let h = '<div class="table-container mt-3 rounded-lg border border-fg-border"><table>';
-    h += '<thead><tr>';
-    data.columns.forEach(c => {
-        h += `<th class="bg-fg-900 text-fg-accent text-[10px] uppercase tracking-wider font-mono px-3 py-2.5 text-left border-b border-fg-border">${escapeHtml(c)}</th>`;
-    });
+    let h = '<div class="table-container mt-3 rounded-lg border border-fg-border"><table><thead><tr>';
+    data.columns.forEach(c => { h += `<th class="bg-fg-900 text-fg-accent text-[10px] uppercase tracking-wider font-mono px-3 py-2.5 text-left border-b border-fg-border">${escapeHtml(c)}</th>`; });
     h += '</tr></thead><tbody>';
     data.rows.forEach((row, i) => {
         h += `<tr class="${i % 2 === 0 ? 'bg-fg-800' : 'bg-fg-700/50'} hover:bg-fg-600/50 transition-colors">`;
-        data.columns.forEach(c => {
-            h += `<td class="text-xs px-3 py-2 border-b border-fg-border/50 font-mono">${escapeHtml(String(row[c] ?? ''))}</td>`;
-        });
+        data.columns.forEach(c => { h += `<td class="text-xs px-3 py-2 border-b border-fg-border/50 font-mono">${escapeHtml(String(row[c] ?? ''))}</td>`; });
         h += '</tr>';
     });
     h += '</tbody></table></div>';
@@ -807,363 +513,91 @@ function renderTable(data) {
 }
 
 function renderActions() {
-    const skillBadge = selectedSkillIds.length > 0
-        ? `<span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-400 text-[9px] text-white font-bold ml-1">${selectedSkillIds.length}</span>`
-        : '';
-    return `
-        <div class="flex flex-wrap gap-2 mt-3">
-            <button onclick="openChart()" class="text-xs bg-fg-accent/15 text-fg-accent border border-fg-accent/25 px-3 py-1.5 rounded-lg hover:bg-fg-accent/25 transition font-medium">Gráfico</button>
-            <button onclick="openExplore()" class="text-xs bg-purple-500/15 text-purple-400 border border-purple-500/25 px-3 py-1.5 rounded-lg hover:bg-purple-500/25 transition font-medium">Explorar</button>
-            <button onclick="openAnalytics()" class="text-xs bg-amber-500/15 text-amber-400 border border-amber-500/25 px-3 py-1.5 rounded-lg hover:bg-amber-500/25 transition font-medium">Análise Avançada</button>
-            <button onclick="toggleComparePanel()" class="text-xs bg-fg-blue/15 text-fg-blue border border-fg-blue/25 px-3 py-1.5 rounded-lg hover:bg-fg-blue/25 transition font-medium">Comparar Períodos</button>
-            <button onclick="openSkillSelector(this)" class="text-xs bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 px-3 py-1.5 rounded-lg hover:bg-indigo-500/25 transition font-medium">Skills${skillBadge}</button>
-            <button onclick="exportExcel()" class="text-xs bg-fg-green/15 text-fg-green border border-fg-green/25 px-3 py-1.5 rounded-lg hover:bg-fg-green/25 transition font-medium">Exportar Excel</button>
-            <button onclick="openEmailModal()" class="text-xs bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 px-3 py-1.5 rounded-lg hover:bg-cyan-500/25 transition font-medium">Enviar Email</button>
-        </div>`;
+    return `<div class="flex flex-wrap gap-2 mt-3">
+        <div class="relative inline-block"><button onclick="openChartMenu(this)" class="chart-menu-btn text-xs bg-fg-accent/15 text-fg-accent border border-fg-accent/25 px-3 py-1.5 rounded-lg hover:bg-fg-accent/25 transition font-medium">Gráfico ▾</button></div>
+        <button onclick="openExplore()" class="text-xs bg-purple-500/15 text-purple-400 border border-purple-500/25 px-3 py-1.5 rounded-lg hover:bg-purple-500/25 transition font-medium">Explorar</button>
+        <button onclick="openAnalytics()" class="text-xs bg-amber-500/15 text-amber-400 border border-amber-500/25 px-3 py-1.5 rounded-lg hover:bg-amber-500/25 transition font-medium">Análise Avançada</button>
+        <button onclick="exportExcel()" class="text-xs bg-fg-green/15 text-fg-green border border-fg-green/25 px-3 py-1.5 rounded-lg hover:bg-fg-green/25 transition font-medium">Exportar Excel</button>
+        <button onclick="openEmailModal()" class="text-xs bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 px-3 py-1.5 rounded-lg hover:bg-cyan-500/25 transition font-medium">Enviar Email</button>
+    </div>`;
 }
 
 function appendMessage(role, content, isHtml = false) {
     const chat = document.getElementById('chatArea');
     if (chat.querySelector('.text-center')) chat.innerHTML = '';
-
-    const div = document.createElement('div');
-    div.className = 'fade-in';
-
-    if (role === 'user') {
-        div.innerHTML = `<div class="flex justify-end"><div class="bg-fg-accent/10 border border-fg-accent/20 rounded-xl px-4 py-2.5 max-w-[80%] text-sm">${escapeHtml(content)}</div></div>`;
-    } else if (role === 'loading') {
-        div.id = 'loadingMsg';
-        div.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Deep Agent analisando...</div>`;
-    } else if (role === 'error') {
-        div.innerHTML = `<div class="bg-red-900/15 border border-red-800/40 rounded-xl px-4 py-2.5 text-sm text-red-400">${escapeHtml(content)}</div>`;
-    } else {
-        div.innerHTML = `<div class="bg-fg-700/50 border border-fg-border rounded-xl px-4 py-3 text-sm max-w-full overflow-hidden">${isHtml ? content : escapeHtml(content)}</div>`;
-    }
-
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
+    const div = document.createElement('div'); div.className = 'fade-in';
+    if (role === 'user') { div.innerHTML = `<div class="flex justify-end"><div class="bg-fg-accent/10 border border-fg-accent/20 rounded-xl px-4 py-2.5 max-w-[80%] text-sm">${escapeHtml(content)}</div></div>`; }
+    else if (role === 'loading') { div.id = 'loadingMsg'; div.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Deep Agent analisando...</div>`; }
+    else if (role === 'error') { div.innerHTML = `<div class="bg-red-900/15 border border-red-800/40 rounded-xl px-4 py-2.5 text-sm text-red-400">${escapeHtml(content)}</div>`; }
+    else { div.innerHTML = `<div class="bg-fg-700/50 border border-fg-border rounded-xl px-4 py-3 text-sm max-w-full overflow-hidden">${isHtml ? content : escapeHtml(content)}</div>`; }
+    chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
 }
+function removeLoading() { const el = document.getElementById('loadingMsg'); if (el) el.remove(); }
 
-function removeLoading() {
-    const el = document.getElementById('loadingMsg');
-    if (el) el.remove();
-}
-
-// ============================
-// Excel Export
-// ============================
-async function exportExcel() {
-    if (!lastQueryData) return;
-    try {
-        const res = await fetch('/api/export/excel', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lastQueryData),
-        });
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'quick_insights_export.xlsx';
-        a.click();
-        URL.revokeObjectURL(url);
-    } catch (e) {
-        alert('Erro ao exportar: ' + e.message);
-    }
-}
-
-// ============================
-// Chart (PyGWalker — auto-configured)
-// ============================
-async function openChart() {
-    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) {
-        alert('Sem dados para gráfico.');
-        return;
-    }
-
-    appendMessage('loading', '');
-    const loadingEl = document.getElementById('loadingMsg');
-    if (loadingEl) {
-        loadingEl.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Deep Agent gerando gráfico...</div>`;
-    }
-
-    try {
-        const res = await fetch('/api/chart', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lastQueryData),
-        });
-
-        removeLoading();
-
-        if (!res.ok) {
-            const err = await res.json();
-            appendMessage('error', err.detail || 'Erro ao gerar gráfico');
-            return;
+function linkifySuggestions(html) {
+    const tmp = document.createElement('div'); tmp.innerHTML = html;
+    tmp.querySelectorAll('li').forEach(li => {
+        const text = li.textContent.trim();
+        if (text.length < 15 || li.querySelector('a, code, pre, .qi-suggestion-link')) return;
+        const isSuggestion = /^(analis|verific|compar|investig|identific|calcul|avali|monitor|segmentar|classific|estud|explor|mapear|cruzar|detalh|aprofund|agrupar|filtrar|correlacion|rankear|listar|mostrar|descobrir|qual|quais|como|por que|quanto|onde|faça|execute|gere|crie|realize|extraia|consulte|busque|determine)/i.test(text) || /\?$/.test(text);
+        if (isSuggestion) {
+            const link = document.createElement('a'); link.href = '#'; link.className = 'qi-suggestion-link'; link.title = 'Clique para executar';
+            link.setAttribute('onclick', `event.preventDefault(); runSuggestion(this.dataset.q)`); link.dataset.q = text;
+            link.innerHTML = li.innerHTML + ' <span class="qi-suggestion-icon">▶</span>'; li.innerHTML = ''; li.appendChild(link);
         }
-
-        const html = await res.text();
-        const vizWindow = window.open('', '_blank', 'width=1400,height=850');
-        if (vizWindow) {
-            vizWindow.document.write(html);
-            vizWindow.document.close();
-            appendMessage('assistant',
-                '<div class="flex items-center gap-2 text-sm">' +
-                '<svg class="w-4 h-4 text-fg-green flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" /></svg>' +
-                '<span>Gráfico auto-configurado aberto — <span class="text-fg-accent font-mono text-xs">PyGWalker</span> com visualização sugerida pelo Deep Agent.</span>' +
-                '</div>',
-                true
-            );
-        } else {
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.click();
-            URL.revokeObjectURL(url);
-            appendMessage('assistant', 'Gráfico aberto em nova aba.', false);
-        }
-
-    } catch (e) {
-        removeLoading();
-        appendMessage('error', 'Erro ao gerar gráfico: ' + e.message);
-    }
+    });
+    return tmp.innerHTML;
 }
+function runSuggestion(text) { document.getElementById('queryInput').value = text; sendQuery(); document.getElementById('queryInput').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 
 // ============================
-// Explore (PyGWalker — free exploration)
+// Explore / Analytics / Excel / Email
 // ============================
 async function openExplore() {
-    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) {
-        alert('Sem dados para explorar.');
-        return;
-    }
-
+    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) { alert('Sem dados.'); return; }
     appendMessage('loading', '');
-    const loadingEl = document.getElementById('loadingMsg');
-    if (loadingEl) {
-        loadingEl.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Abrindo explorador...</div>`;
-    }
-
     try {
-        const res = await fetch('/api/explore', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lastQueryData),
-        });
-
+        const res = await fetch('/api/explore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lastQueryData) });
         removeLoading();
-
-        if (!res.ok) {
-            const err = await res.json();
-            appendMessage('error', err.detail || 'Erro ao abrir explorador');
-            return;
-        }
-
+        if (!res.ok) { appendMessage('error', 'Erro'); return; }
         const html = await res.text();
-        const vizWindow = window.open('', '_blank', 'width=1400,height=850');
-        if (vizWindow) {
-            vizWindow.document.write(html);
-            vizWindow.document.close();
-            appendMessage('assistant',
-                '<div class="flex items-center gap-2 text-sm">' +
-                '<svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" /></svg>' +
-                '<span>Explorador de dados aberto — <span class="text-purple-400 font-mono text-xs">PyGWalker</span> — arraste campos para criar suas visualizações.</span>' +
-                '</div>',
-                true
-            );
-        } else {
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.click();
-            URL.revokeObjectURL(url);
-            appendMessage('assistant', 'Explorador aberto em nova aba.', false);
-        }
-
-    } catch (e) {
-        removeLoading();
-        appendMessage('error', 'Erro ao abrir explorador: ' + e.message);
-    }
+        const w = window.open('', '_blank', 'width=1400,height=850');
+        if (w) { w.document.write(html); w.document.close(); }
+        appendMessage('assistant', '<div class="text-sm text-purple-400">Explorador aberto — PyGWalker.</div>', true);
+    } catch(e) { removeLoading(); appendMessage('error', 'Erro: ' + e.message); }
 }
 
-// ============================
-// Análise Avançada (scikit-learn)
-// ============================
 async function openAnalytics() {
-    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) {
-        alert('Sem dados para análise.');
-        return;
-    }
-
+    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) { alert('Sem dados.'); return; }
     appendMessage('loading', '');
-    const loadingEl = document.getElementById('loadingMsg');
-    if (loadingEl) {
-        loadingEl.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Gerando análise avançada...</div>`;
-    }
-
     try {
-        const res = await fetch('/api/analytics', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lastQueryData),
-        });
-
+        const res = await fetch('/api/analytics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lastQueryData) });
         removeLoading();
-
-        if (!res.ok) {
-            const err = await res.json();
-            appendMessage('error', err.detail || 'Erro ao gerar análise');
-            return;
-        }
-
+        if (!res.ok) { appendMessage('error', 'Erro'); return; }
         const html = await res.text();
         const w = window.open('', '_blank', 'width=1500,height=900');
-        if (w) {
-            w.document.write(html);
-            w.document.close();
-            appendMessage('assistant',
-                '<div class="flex items-center gap-2 text-sm">' +
-                '<svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" /></svg>' +
-                '<span>Análise Avançada aberta — <span class="text-amber-400 font-mono text-xs">scikit-learn</span> — estatísticas descritivas + modelos preditivos.</span>' +
-                '</div>',
-                true
-            );
-        } else {
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-    } catch (e) {
-        removeLoading();
-        appendMessage('error', 'Erro ao gerar análise: ' + e.message);
-    }
+        if (w) { w.document.write(html); w.document.close(); }
+        appendMessage('assistant', '<div class="text-sm text-amber-400">Análise Avançada aberta — scikit-learn.</div>', true);
+    } catch(e) { removeLoading(); appendMessage('error', 'Erro: ' + e.message); }
 }
 
-// ============================
-// Gallery
-// ============================
-async function loadGallery() {
-    const list = document.getElementById('galleryList');
-    const empty = document.getElementById('galleryEmpty');
-    const count = document.getElementById('galleryCount');
-    try {
-        const res = await fetch('/api/gallery');
-        const items = await res.json();
-        if (!items.length) {
-            list.classList.add('hidden');
-            empty.classList.remove('hidden');
-            count.textContent = '';
-            return;
-        }
-        list.classList.remove('hidden');
-        empty.classList.add('hidden');
-        count.textContent = items.length + ' análise(s)';
-
-        const baseUrl = window.location.origin;
-        list.innerHTML = items.map(item => {
-            const link = `${baseUrl}/api/gallery/${item.share_token}/view`;
-            const teamsUrl = `https://teams.microsoft.com/l/chat/0/0?message=${encodeURIComponent(item.title + ' — ' + link)}`;
-            const date = new Date(item.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-            return `
-            <div class="bg-fg-900 border border-fg-border rounded-lg p-4 fade-in">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex-1 min-w-0">
-                        <h3 class="text-sm font-semibold text-fg-bright truncate">${escapeHtml(item.title)}</h3>
-                        ${item.description ? `<p class="text-xs text-fg-muted mt-0.5 truncate">${escapeHtml(item.description)}</p>` : ''}
-                        <p class="text-[10px] text-fg-muted mt-1 font-mono">${date}</p>
-                    </div>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <button onclick="window.open('${link}','_blank','width=1400,height=850')" class="text-[10px] bg-fg-accent/15 text-fg-accent border border-fg-accent/25 px-2.5 py-1 rounded-md hover:bg-fg-accent/25 transition font-medium" title="Abrir">Abrir</button>
-                        <button onclick="copyGalleryLink('${link}')" class="text-[10px] bg-fg-blue/15 text-fg-blue border border-fg-blue/25 px-2.5 py-1 rounded-md hover:bg-fg-blue/25 transition font-medium" title="Copiar link">Copiar Link</button>
-                        <a href="${teamsUrl}" target="_blank" class="text-[10px] bg-purple-500/15 text-purple-400 border border-purple-500/25 px-2.5 py-1 rounded-md hover:bg-purple-500/25 transition font-medium inline-block" title="Enviar por Teams">Teams</a>
-                        <button onclick="deleteGalleryItem(${item.id})" class="text-[10px] bg-red-500/15 text-red-400 border border-red-500/25 px-2.5 py-1 rounded-md hover:bg-red-500/25 transition font-medium" title="Excluir">Excluir</button>
-                    </div>
-                </div>
-            </div>`;
-        }).join('');
-    } catch (e) {
-        list.innerHTML = `<p class="text-xs text-red-400">Erro ao carregar galeria: ${e.message}</p>`;
-    }
+async function exportExcel() {
+    if (!lastQueryData) return;
+    const res = await fetch('/api/export/excel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lastQueryData) });
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'quick_insights_export.xlsx'; a.click(); URL.revokeObjectURL(url);
 }
 
-function copyGalleryLink(link) {
-    navigator.clipboard.writeText(link).then(() => {
-        const btn = event.target;
-        const orig = btn.textContent;
-        btn.textContent = 'Copiado!';
-        btn.classList.add('text-fg-green');
-        setTimeout(() => { btn.textContent = orig; btn.classList.remove('text-fg-green'); }, 1500);
-    });
-}
-
-async function deleteGalleryItem(id) {
-    if (!confirm('Excluir esta análise da galeria?')) return;
-    try {
-        await fetch('/api/gallery/' + id, { method: 'DELETE' });
-        loadGallery();
-    } catch (e) {
-        alert('Erro: ' + e.message);
-    }
-}
-
-// ============================
-// Email
-// ============================
-function openEmailModal() {
-    document.getElementById('emailSubject').value = lastQuestion || 'Quick Insights - Resultado';
-    document.getElementById('emailModal').classList.remove('hidden');
-    document.getElementById('emailModal').classList.add('flex');
-}
-
-function closeEmailModal() {
-    document.getElementById('emailModal').classList.add('hidden');
-    document.getElementById('emailModal').classList.remove('flex');
-}
-
+function openEmailModal() { document.getElementById('emailSubject').value = lastQuestion || 'Quick Insights'; document.getElementById('emailModal').classList.remove('hidden'); document.getElementById('emailModal').classList.add('flex'); }
+function closeEmailModal() { document.getElementById('emailModal').classList.add('hidden'); document.getElementById('emailModal').classList.remove('flex'); }
 async function confirmSendEmail() {
-    const to = document.getElementById('emailTo').value.trim();
-    const subject = document.getElementById('emailSubject').value.trim();
+    const to = document.getElementById('emailTo').value.trim(); const subject = document.getElementById('emailSubject').value.trim();
     if (!to) { alert('Informe o email.'); return; }
-
-    try {
-        const res = await fetch('/api/email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                to_email: to,
-                subject: subject,
-                body_html: `<p>${conversationContext.replace(/\n/g, '<br>')}</p>`,
-                excel_data: lastQueryData,
-            }),
-        });
-        if (!res.ok) {
-            const err = await res.json();
-            alert(err.detail || 'Erro ao gerar email.');
-            return;
-        }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${subject}.eml`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        closeEmailModal();
-        appendMessage('assistant', 'Arquivo .eml gerado. Abra-o para enviar pelo Outlook.');
-    } catch (e) {
-        alert('Erro: ' + e.message);
-    }
+    const res = await fetch('/api/email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to_email: to, subject: subject, body_html: `<p>${conversationContext.replace(/\n/g, '<br>')}</p>`, excel_data: lastQueryData }) });
+    if (!res.ok) { alert('Erro ao gerar email.'); return; }
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${subject}.eml`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    closeEmailModal();
 }
 
 // ============================
@@ -1172,105 +606,60 @@ async function confirmSendEmail() {
 async function loadTables() {
     const el = document.getElementById('tablesList');
     try {
-        const res = await fetch('/api/tables');
-        const tables = await res.json();
-        if (!tables.length) {
-            el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma tabela encontrada. Faça upload de um Excel.</p>';
-            return;
-        }
-        const isAdmin = currentUser && (currentUser.user_type === 'superuser' || currentUser.user_type === 'admin');
-        el.innerHTML = tables.map(t => `
-            <div class="flex items-center justify-between bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border hover:border-fg-accent/30 transition-all group">
+        const res = await fetch('/api/tables'); const tables = await res.json();
+        if (!tables.length) { el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma tabela. Faça upload de um Excel.</p>'; return; }
+        const isAdmin = currentUser && ['root','superuser','admin'].includes(currentUser.user_type);
+        el.innerHTML = tables.map(t => {
+            const dmBadges = (t.datamarts || []).map(d => `<span class="text-[9px] bg-fg-blue/10 text-fg-blue px-1.5 py-0.5 rounded-full">${escapeHtml(d.name)}</span>`).join(' ');
+            return `<div class="flex items-center justify-between bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border hover:border-fg-accent/30 transition-all group">
                 <div class="cursor-pointer flex-1" onclick="previewTable('${t.name}')">
                     <span class="text-sm text-fg-green font-mono font-bold">${escapeHtml(t.name)}</span>
                     <span class="text-[10px] text-fg-muted ml-2 font-mono">${t.row_count} reg · ${t.columns.length} col</span>
+                    <span class="ml-2">${dmBadges}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    ${isAdmin ? `<button onclick="event.stopPropagation(); dropTable('${t.name}')" class="text-fg-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100" title="Excluir tabela">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                    </button>` : ''}
+                    ${isAdmin ? `<button onclick="event.stopPropagation(); dropTable('${t.name}')" class="text-fg-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100" title="Excluir"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
                     <span class="text-xs text-fg-muted group-hover:text-fg-accent transition cursor-pointer" onclick="previewTable('${t.name}')">&rarr;</span>
                 </div>
-            </div>
-        `).join('');
-    } catch (e) {
-        el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
-    }
+            </div>`;
+        }).join('');
+        loadDatamartsAdmin();
+    } catch (e) { el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`; }
 }
 
 async function dropTable(name) {
-    if (!confirm(`Excluir a tabela "${name}"?\n\nTodos os dados serão perdidos permanentemente.`)) return;
-    if (!confirm(`Confirme novamente: DROP TABLE "${name}"`)) return;
-    try {
-        const res = await fetch(`/api/tables/${encodeURIComponent(name)}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) { alert(data.detail || data.error || 'Erro ao excluir.'); return; }
-        document.getElementById('tablePreview').classList.add('hidden');
-        loadTables();
-    } catch(e) {
-        alert('Erro: ' + e.message);
-    }
+    if (!confirm(`Excluir "${name}"?`)) return;
+    if (!confirm(`Confirme: DROP TABLE "${name}"`)) return;
+    try { const res = await fetch(`/api/tables/${encodeURIComponent(name)}`, { method: 'DELETE' }); const data = await res.json(); if (!res.ok) { alert(data.detail || data.error || 'Erro.'); return; } document.getElementById('tablePreview').classList.add('hidden'); loadTables(); } catch(e) { alert('Erro: ' + e.message); }
 }
 
 async function previewTable(name) {
-    const panel = document.getElementById('tablePreview');
-    const content = document.getElementById('previewContent');
     document.getElementById('previewTitle').textContent = `Preview: ${name}`;
-    panel.classList.remove('hidden');
-    content.innerHTML = '<div class="shimmer h-32 rounded-lg"></div>';
-
-    try {
-        const res = await fetch(`/api/tables/${encodeURIComponent(name)}/preview`);
-        const data = await res.json();
-        content.innerHTML = renderTable(data);
-    } catch (e) {
-        content.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
-    }
+    document.getElementById('tablePreview').classList.remove('hidden');
+    document.getElementById('previewContent').innerHTML = '<div class="shimmer h-32 rounded-lg"></div>';
+    const res = await fetch(`/api/tables/${encodeURIComponent(name)}/preview`);
+    document.getElementById('previewContent').innerHTML = renderTable(await res.json());
 }
 
-// ============================
-// Upload
-// ============================
-function handleDrop(e) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drop-active');
-    const file = e.dataTransfer.files[0];
-    if (file) uploadFile(file);
-}
-
+function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drop-active'); if (e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]); }
 async function uploadFile(file) {
     if (!file) return;
-    const status = document.getElementById('uploadStatus');
-    status.classList.remove('hidden');
-    status.className = 'mt-3 text-xs text-fg-accent';
-    status.textContent = `Enviando ${file.name}...`;
-
-    const formData = new FormData();
-    formData.append('file', file);
-
+    const status = document.getElementById('uploadStatus'); status.classList.remove('hidden');
+    status.className = 'mt-3 text-xs text-fg-accent'; status.textContent = `Enviando ${file.name}...`;
+    const formData = new FormData(); formData.append('file', file);
+    const dmNew = document.getElementById('uploadDatamartNew') ? document.getElementById('uploadDatamartNew').value.trim() : '';
+    const dmSelect = document.getElementById('uploadDatamart') ? document.getElementById('uploadDatamart').value : 'default';
+    const dmName = dmNew || dmSelect || 'default';
     try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const res = await fetch('/api/upload?datamart_name=' + encodeURIComponent(dmName), { method: 'POST', body: formData });
         const data = await res.json();
-
-        if (data.detail) {
-            status.className = 'mt-3 text-xs text-red-400';
-            status.textContent = data.detail;
-            return;
-        }
-
-        let html = `<span class="text-fg-green font-bold font-mono">${file.name}</span> processado:<br>`;
-        data.sheets.forEach(s => {
-            const icon = s.action === 'created' ? '+' : s.action === 'appended' ? '~' : '-';
-            html += `<span class="text-fg-accent font-mono">[${icon}]</span> <strong>${s.sheet}</strong> &rarr; ${s.table || 'ignorada'} (${s.action}, ${s.rows} linhas)<br>`;
-        });
-        status.innerHTML = html;
-        status.className = 'mt-3 text-xs text-fg-text';
-        loadTables();
-        loadAnalysisTypeSelector();
-    } catch (e) {
-        status.className = 'mt-3 text-xs text-red-400';
-        status.textContent = 'Erro: ' + e.message;
-    }
+        if (data.detail) { status.className = 'mt-3 text-xs text-red-400'; status.textContent = data.detail; return; }
+        let html = `<span class="text-fg-green font-bold font-mono">${file.name}</span> → DataMart: <span class="text-fg-blue font-mono">${data.datamart || dmName}</span><br>`;
+        data.sheets.forEach(s => { html += `<span class="text-fg-accent font-mono">[${s.action === 'created' ? '+' : '~'}]</span> <strong>${s.sheet}</strong> → ${s.table || 'ignorada'} (${s.rows} linhas)<br>`; });
+        status.innerHTML = html; status.className = 'mt-3 text-xs text-fg-text';
+        if (document.getElementById('uploadDatamartNew')) document.getElementById('uploadDatamartNew').value = '';
+        loadTables(); loadAnalysisTypeSelector(); loadDatamarts();
+    } catch (e) { status.className = 'mt-3 text-xs text-red-400'; status.textContent = 'Erro: ' + e.message; }
 }
 
 // ============================
@@ -1278,584 +667,109 @@ async function uploadFile(file) {
 // ============================
 async function loadAnalysisTypes() {
     const el = document.getElementById('analysisTypesList');
-    try {
-        const res = await fetch('/api/analysis-types');
-        const types = await res.json();
-        if (!types.length) {
-            el.innerHTML = '<p class="text-xs text-fg-muted">Nenhum tipo cadastrado.</p>';
-            return;
-        }
-        el.innerHTML = types.map(t => `
-            <div class="bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border hover:border-fg-accent/30 transition-all cursor-pointer" onclick="editAnalysisType(${t.id})">
-                <span class="text-sm text-fg-green font-mono">${escapeHtml(t.name)}</span>
-            </div>
-        `).join('');
-    } catch (e) {
-        el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
-    }
+    try { const res = await fetch('/api/analysis-types'); const types = await res.json();
+    if (!types.length) { el.innerHTML = '<p class="text-xs text-fg-muted">Nenhum tipo.</p>'; return; }
+    el.innerHTML = types.map(t => `<div class="bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border hover:border-fg-accent/30 transition-all cursor-pointer" onclick="editAnalysisType(${t.id})"><span class="text-sm text-fg-green font-mono">${escapeHtml(t.name)}</span></div>`).join('');
+    } catch (e) { el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`; }
 }
-
 async function loadAnalysisTypeSelector() {
     const sel = document.getElementById('analysisType');
-    try {
-        const res = await fetch('/api/analysis-types');
-        const types = await res.json();
-        sel.innerHTML = '<option value="">— Selecione o Tipo de Análise —</option>' +
-            types.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
-    } catch (e) {
-        sel.innerHTML = '<option value="">Erro ao carregar</option>';
-    }
+    try { const res = await fetch('/api/analysis-types'); const types = await res.json();
+    sel.innerHTML = '<option value="">— Selecione o Tipo de Análise —</option>' + types.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+    } catch(e) { sel.innerHTML = '<option value="">Erro</option>'; }
 }
+function newAnalysisType() { document.getElementById('editorTitle').textContent = 'Novo Tipo'; document.getElementById('analysisForm').classList.remove('hidden'); document.getElementById('editId').value = ''; document.getElementById('editName').value = ''; document.getElementById('editPrompt').value = ''; document.getElementById('editGuardIn').value = ''; document.getElementById('editGuardOut').value = ''; document.getElementById('btnDelete').classList.add('hidden'); }
+async function editAnalysisType(id) { const res = await fetch(`/api/analysis-types/${id}`); const t = await res.json(); document.getElementById('editorTitle').textContent = 'Editar: ' + t.name; document.getElementById('analysisForm').classList.remove('hidden'); document.getElementById('editId').value = t.id; document.getElementById('editName').value = t.name; document.getElementById('editPrompt').value = t.system_prompt; document.getElementById('editGuardIn').value = t.guardrails_input; document.getElementById('editGuardOut').value = t.guardrails_output; document.getElementById('btnDelete').classList.remove('hidden'); }
+async function saveAnalysisType() { const id = document.getElementById('editId').value; const payload = { name: document.getElementById('editName').value, system_prompt: document.getElementById('editPrompt').value, guardrails_input: document.getElementById('editGuardIn').value, guardrails_output: document.getElementById('editGuardOut').value }; await fetch(id ? `/api/analysis-types/${id}` : '/api/analysis-types', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); loadAnalysisTypes(); loadAnalysisTypeSelector(); alert('Salvo.'); }
+async function deleteAnalysisType() { const id = document.getElementById('editId').value; if (!id || !confirm('Excluir?')) return; await fetch(`/api/analysis-types/${id}`, { method: 'DELETE' }); document.getElementById('analysisForm').classList.add('hidden'); loadAnalysisTypes(); loadAnalysisTypeSelector(); }
 
-function newAnalysisType() {
-    document.getElementById('editorTitle').textContent = 'Novo Tipo de Análise';
-    document.getElementById('analysisForm').classList.remove('hidden');
-    document.getElementById('editId').value = '';
-    document.getElementById('editName').value = '';
-    document.getElementById('editPrompt').value = '';
-    document.getElementById('editGuardIn').value = '';
-    document.getElementById('editGuardOut').value = '';
-    document.getElementById('btnDelete').classList.add('hidden');
+// ============================
+// Gallery
+// ============================
+async function loadGallery() {
+    const list = document.getElementById('galleryList'); const empty = document.getElementById('galleryEmpty');
+    try { const items = await (await fetch('/api/gallery')).json();
+    if (!items.length) { list.classList.add('hidden'); empty.classList.remove('hidden'); document.getElementById('galleryCount').textContent = ''; return; }
+    list.classList.remove('hidden'); empty.classList.add('hidden'); document.getElementById('galleryCount').textContent = items.length + ' análise(s)';
+    const baseUrl = window.location.origin;
+    list.innerHTML = items.map(item => { const link = `${baseUrl}/api/gallery/${item.share_token}/view`; return `<div class="bg-fg-900 border border-fg-border rounded-lg p-4 fade-in"><div class="flex items-start justify-between gap-3"><div class="flex-1 min-w-0"><h3 class="text-sm font-semibold text-fg-bright truncate">${escapeHtml(item.title)}</h3></div><div class="flex gap-1.5"><button onclick="window.open('${link}','_blank','width=1400,height=850')" class="text-[10px] bg-fg-accent/15 text-fg-accent border border-fg-accent/25 px-2.5 py-1 rounded-md hover:bg-fg-accent/25 transition">Abrir</button><button onclick="navigator.clipboard.writeText('${link}')" class="text-[10px] bg-fg-blue/15 text-fg-blue border border-fg-blue/25 px-2.5 py-1 rounded-md hover:bg-fg-blue/25 transition">Copiar Link</button><button onclick="deleteGalleryItem(${item.id})" class="text-[10px] bg-red-500/15 text-red-400 border border-red-500/25 px-2.5 py-1 rounded-md hover:bg-red-500/25 transition">Excluir</button></div></div></div>`; }).join('');
+    } catch(e) { list.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`; }
 }
-
-async function editAnalysisType(id) {
-    try {
-        const res = await fetch(`/api/analysis-types/${id}`);
-        const t = await res.json();
-        document.getElementById('editorTitle').textContent = 'Editar: ' + t.name;
-        document.getElementById('analysisForm').classList.remove('hidden');
-        document.getElementById('editId').value = t.id;
-        document.getElementById('editName').value = t.name;
-        document.getElementById('editPrompt').value = t.system_prompt;
-        document.getElementById('editGuardIn').value = t.guardrails_input;
-        document.getElementById('editGuardOut').value = t.guardrails_output;
-        document.getElementById('btnDelete').classList.remove('hidden');
-    } catch (e) {
-        alert('Erro: ' + e.message);
-    }
-}
-
-async function saveAnalysisType() {
-    const id = document.getElementById('editId').value;
-    const payload = {
-        name: document.getElementById('editName').value,
-        system_prompt: document.getElementById('editPrompt').value,
-        guardrails_input: document.getElementById('editGuardIn').value,
-        guardrails_output: document.getElementById('editGuardOut').value,
-    };
-    const url = id ? `/api/analysis-types/${id}` : '/api/analysis-types';
-    const method = id ? 'PUT' : 'POST';
-    try {
-        await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        loadAnalysisTypes();
-        loadAnalysisTypeSelector();
-        alert('Salvo.');
-    } catch (e) {
-        alert('Erro: ' + e.message);
-    }
-}
-
-async function deleteAnalysisType() {
-    const id = document.getElementById('editId').value;
-    if (!id || !confirm('Excluir?')) return;
-    try {
-        await fetch(`/api/analysis-types/${id}`, { method: 'DELETE' });
-        document.getElementById('analysisForm').classList.add('hidden');
-        loadAnalysisTypes();
-        loadAnalysisTypeSelector();
-    } catch (e) {
-        alert('Erro: ' + e.message);
-    }
-}
+async function deleteGalleryItem(id) { if (!confirm('Excluir?')) return; await fetch('/api/gallery/' + id, { method: 'DELETE' }); loadGallery(); }
 
 // ============================
 // API Keys
 // ============================
-async function loadApiKeys() {
-    const el = document.getElementById('keysList');
-    try {
-        const res = await fetch('/api/keys');
-        const keys = await res.json();
-        if (!keys.length) {
-            el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma chave gerada.</p>';
-            return;
-        }
-        el.innerHTML = keys.map(k => `
-            <div class="flex items-center justify-between bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border">
-                <div>
-                    <span class="text-sm text-fg-text font-mono">${escapeHtml(k.label)}</span>
-                    <span class="text-[10px] text-fg-muted ml-2 font-mono">${k.created_at}</span>
-                </div>
-                <span class="text-[10px] font-mono font-bold ${k.is_active ? 'text-fg-green' : 'text-red-400'}">${k.is_active ? 'ATIVA' : 'INATIVA'}</span>
-            </div>
-        `).join('');
-    } catch (e) {
-        el.innerHTML = `<p class="text-xs text-red-400">Erro: ${e.message}</p>`;
-    }
-}
-
-async function createApiKey() {
-    const label = document.getElementById('keyLabel').value.trim();
-    if (!label) { alert('Informe um label.'); return; }
-    try {
-        const res = await fetch('/api/keys', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ label }),
-        });
-        const data = await res.json();
-        document.getElementById('keyResult').classList.remove('hidden');
-        document.getElementById('keyValue').textContent = data.key;
-        document.getElementById('keyLabel').value = '';
-        loadApiKeys();
-    } catch (e) {
-        alert('Erro: ' + e.message);
-    }
-}
+async function loadApiKeys() { const el = document.getElementById('keysList'); try { const keys = await (await fetch('/api/keys')).json(); if (!keys.length) { el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma chave.</p>'; return; } el.innerHTML = keys.map(k => `<div class="flex items-center justify-between bg-fg-900 rounded-lg px-3 py-2.5 border border-fg-border"><span class="text-sm text-fg-text font-mono">${escapeHtml(k.label)}</span><span class="text-[10px] font-mono font-bold ${k.is_active ? 'text-fg-green' : 'text-red-400'}">${k.is_active ? 'ATIVA' : 'INATIVA'}</span></div>`).join(''); } catch(e) {} }
+async function createApiKey() { const label = document.getElementById('keyLabel').value.trim(); if (!label) { alert('Informe um label.'); return; } const data = await (await fetch('/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label }) })).json(); document.getElementById('keyResult').classList.remove('hidden'); document.getElementById('keyValue').textContent = data.key; document.getElementById('keyLabel').value = ''; loadApiKeys(); }
 
 // ============================
-// Utils
-// ============================
-function escapeHtml(s) {
-    const div = document.createElement('div');
-    div.textContent = s;
-    return div.innerHTML;
-}
-
-// ============================
-// Skill Selector (per-query)
-// ============================
-async function openSkillSelector(triggerBtn) {
-    // Remove any existing selector panel
-    const existing = document.getElementById('skillSelectorPanel');
-    if (existing) { existing.remove(); return; }
-
-    // Fetch all skills
-    try {
-        const res = await fetch('/api/skills');
-        if (!res.ok) return;
-        allSkillsList = await res.json();
-    } catch(e) { return; }
-
-    if (!allSkillsList.length) {
-        alert('Nenhuma skill cadastrada. Crie skills na aba Skills.');
-        return;
-    }
-
-    // Find the parent actions div and insert the panel after it
-    const actionsDiv = triggerBtn.closest('.flex.flex-wrap');
-    const panel = document.createElement('div');
-    panel.id = 'skillSelectorPanel';
-    panel.className = 'mt-3 bg-fg-900 border border-indigo-500/30 rounded-xl p-4 fade-in';
-    panel.innerHTML = `
-        <div class="flex items-center justify-between mb-3">
-            <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                Skills para a próxima consulta
-            </h4>
-            <div class="flex gap-2">
-                <button onclick="clearSkillSelection()" class="text-[10px] text-fg-muted hover:text-fg-accent transition">Limpar</button>
-                <button onclick="document.getElementById('skillSelectorPanel').remove()" class="text-[10px] text-fg-muted hover:text-red-400 transition">Fechar</button>
-            </div>
-        </div>
-        <div class="space-y-2 max-h-[260px] overflow-y-auto pr-1">
-            ${allSkillsList.map(s => {
-                const checked = selectedSkillIds.includes(s.id) ? 'checked' : '';
-                const activeTag = s.is_active
-                    ? '<span class="text-[9px] bg-fg-green/15 text-fg-green px-1.5 py-0.5 rounded-full">ON</span>'
-                    : '<span class="text-[9px] bg-fg-500/30 text-fg-muted px-1.5 py-0.5 rounded-full">OFF</span>';
-                return `
-                <label class="flex items-start gap-3 p-2.5 rounded-lg hover:bg-fg-700/50 cursor-pointer transition group">
-                    <input type="checkbox" value="${s.id}" ${checked}
-                           onchange="toggleSkillSelection(${s.id})"
-                           class="mt-0.5 accent-indigo-400 w-4 h-4 rounded cursor-pointer flex-shrink-0">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-mono font-bold text-indigo-300 group-hover:text-indigo-200 transition">${escapeHtml(s.name)}</span>
-                            ${activeTag}
-                        </div>
-                        <p class="text-[11px] text-fg-muted leading-relaxed mt-0.5 line-clamp-2">${escapeHtml(s.description || 'Sem descrição')}</p>
-                    </div>
-                </label>`;
-            }).join('')}
-        </div>
-        <div class="flex items-center justify-between mt-3 pt-3 border-t border-fg-border/50">
-            <span class="text-[10px] text-fg-muted" id="skillSelectionCount">${selectedSkillIds.length} skill(s) selecionada(s)</span>
-            <button onclick="document.getElementById('skillSelectorPanel').remove()" class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-lg hover:bg-indigo-500/30 transition font-medium">OK</button>
-        </div>
-    `;
-    actionsDiv.after(panel);
-}
-
-function toggleSkillSelection(id) {
-    const idx = selectedSkillIds.indexOf(id);
-    if (idx >= 0) {
-        selectedSkillIds.splice(idx, 1);
-    } else {
-        selectedSkillIds.push(id);
-    }
-    updateSkillSelectionUI();
-}
-
-function clearSkillSelection() {
-    selectedSkillIds = [];
-    // Uncheck all checkboxes in selector panel
-    const panel = document.getElementById('skillSelectorPanel');
-    if (panel) {
-        panel.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    }
-    updateSkillSelectionUI();
-}
-
-function updateSkillSelectionUI() {
-    // Update count in selector panel
-    const countEl = document.getElementById('skillSelectionCount');
-    if (countEl) countEl.textContent = `${selectedSkillIds.length} skill(s) selecionada(s)`;
-
-    // Update badge near query input
-    const badge = document.getElementById('selectedSkillsBadge');
-    if (selectedSkillIds.length > 0) {
-        const names = selectedSkillIds.map(id => {
-            const s = allSkillsList.find(sk => sk.id === id);
-            return s ? s.name : `#${id}`;
-        });
-        badge.innerHTML = `
-            <div class="flex items-center gap-1.5 flex-wrap">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400 flex-shrink-0"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                ${names.map(n => `<span class="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 px-1.5 py-0.5 rounded-full font-mono">${escapeHtml(n)}</span>`).join('')}
-                <button onclick="clearSkillSelection()" class="text-[10px] text-fg-muted hover:text-red-400 transition ml-1" title="Limpar seleção">✕</button>
-            </div>`;
-        badge.classList.remove('hidden');
-    } else {
-        badge.classList.add('hidden');
-        badge.innerHTML = '';
-    }
-}
-
-// ============================
-// Custom Skills
+// Skills
 // ============================
 async function loadSkills() {
-    try {
-        const res = await fetch('/api/skills');
-        if (!res.ok) return;
-        const skills = await res.json();
-        const el = document.getElementById('skillsList');
-        if (!skills.length) {
-            el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma skill cadastrada. Crie a primeira usando o editor ao lado.</p>';
-            updateActiveSkillsBadge(0);
-            return;
-        }
-        const activeCount = skills.filter(s => s.is_active).length;
-        updateActiveSkillsBadge(activeCount);
-
-        el.innerHTML = skills.map(s => `
-            <div class="bg-fg-900 rounded-lg border border-fg-border p-3 hover:border-fg-accent/30 transition-all group">
-                <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-sm text-fg-green font-mono font-bold cursor-pointer hover:text-fg-accent transition" onclick="editSkill(${s.id})">${escapeHtml(s.name)}</span>
-                    <div class="flex items-center gap-2">
-                        <button onclick="toggleSkillActive(${s.id})" class="text-[10px] font-semibold px-2 py-0.5 rounded-full transition ${s.is_active ? 'bg-fg-green/15 text-fg-green border border-fg-green/30' : 'bg-fg-500/30 text-fg-muted border border-fg-border'}" title="${s.is_active ? 'Ativa — clique para desativar' : 'Inativa — clique para ativar'}">
-                            ${s.is_active ? 'ON' : 'OFF'}
-                        </button>
-                        <button onclick="removeSkill(${s.id}, '${escapeHtml(s.name)}')" class="text-fg-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        </button>
-                    </div>
-                </div>
-                <p class="text-[11px] text-fg-muted leading-relaxed line-clamp-2">${escapeHtml(s.description || '—')}</p>
-                <div class="flex items-center gap-2 mt-1.5 text-[10px] text-fg-muted">
-                    ${s.created_by ? '<span>por ' + escapeHtml(s.created_by) + '</span><span class="text-fg-border">·</span>' : ''}
-                    <span>${s.created_at ? s.created_at.slice(0,16).replace('T',' ') : ''}</span>
-                </div>
-            </div>
-        `).join('');
-    } catch(e) {
-        console.error('Erro ao carregar skills:', e);
-    }
+    try { const skills = await (await fetch('/api/skills')).json(); const el = document.getElementById('skillsList');
+    if (!skills.length) { el.innerHTML = '<p class="text-xs text-fg-muted">Nenhuma skill.</p>'; updateActiveSkillsBadge(0); return; }
+    updateActiveSkillsBadge(skills.filter(s => s.is_active).length);
+    el.innerHTML = skills.map(s => `<div class="bg-fg-900 rounded-lg border border-fg-border p-3 hover:border-fg-accent/30 transition-all group"><div class="flex items-center justify-between mb-1.5"><span class="text-sm text-fg-green font-mono font-bold cursor-pointer hover:text-fg-accent transition" onclick="editSkill(${s.id})">${escapeHtml(s.name)}</span><div class="flex items-center gap-2"><button onclick="toggleSkillActive(${s.id})" class="text-[10px] font-semibold px-2 py-0.5 rounded-full transition ${s.is_active ? 'bg-fg-green/15 text-fg-green border border-fg-green/30' : 'bg-fg-500/30 text-fg-muted border border-fg-border'}">${s.is_active ? 'ON' : 'OFF'}</button><button onclick="removeSkill(${s.id}, '${escapeHtml(s.name)}')" class="text-fg-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></div><p class="text-[11px] text-fg-muted leading-relaxed line-clamp-2">${escapeHtml(s.description || '—')}</p></div>`).join('');
+    } catch(e) { console.error(e); }
 }
-
-function updateActiveSkillsBadge(count) {
-    const badge = document.getElementById('activeSkillsBadge');
-    const countEl = document.getElementById('activeSkillsCount');
-    if (count > 0) {
-        badge.classList.remove('hidden');
-        countEl.textContent = count + ' skill' + (count > 1 ? 's' : '');
-    } else {
-        badge.classList.add('hidden');
-    }
-}
-
-function newSkill() {
-    document.getElementById('skillEditId').value = '';
-    document.getElementById('skillName').value = '';
-    document.getElementById('skillDesc').value = '';
-    document.getElementById('skillContent').value = '';
-    document.getElementById('skillName').focus();
-}
-
-async function editSkill(id) {
-    try {
-        const res = await fetch(`/api/skills/${id}`);
-        if (!res.ok) return;
-        const s = await res.json();
-        document.getElementById('skillEditId').value = s.id;
-        document.getElementById('skillName').value = s.name;
-        document.getElementById('skillDesc').value = s.description || '';
-        document.getElementById('skillContent').value = s.content || '';
-        showTab('skills');
-    } catch(e) { alert('Erro: ' + e.message); }
-}
-
-async function saveSkill() {
-    const id = document.getElementById('skillEditId').value;
-    const name = document.getElementById('skillName').value.trim();
-    const description = document.getElementById('skillDesc').value.trim();
-    const content = document.getElementById('skillContent').value;
-    if (!name) { alert('Nome é obrigatório.'); return; }
-
-    try {
-        if (id) {
-            const res = await fetch(`/api/skills/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, description, content }),
-            });
-            if (!res.ok) { const e = await res.json(); alert(e.detail || 'Erro.'); return; }
-        } else {
-            const res = await fetch('/api/skills', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, description, content }),
-            });
-            if (!res.ok) { const e = await res.json(); alert(e.detail || 'Erro ao criar skill.'); return; }
-        }
-        newSkill();
-        loadSkills();
-    } catch(e) { alert('Erro: ' + e.message); }
-}
-
-async function toggleSkillActive(id) {
-    try {
-        await fetch(`/api/skills/${id}/toggle`, { method: 'PUT' });
-        loadSkills();
-    } catch(e) { alert('Erro: ' + e.message); }
-}
-
-async function removeSkill(id, name) {
-    if (!confirm(`Excluir a skill "${name}"?`)) return;
-    try {
-        await fetch(`/api/skills/${id}`, { method: 'DELETE' });
-        loadSkills();
-    } catch(e) { alert('Erro: ' + e.message); }
-}
-
-// Load active skills badge on init
-async function loadActiveSkillsBadge() {
-    try {
-        const res = await fetch('/api/skills/active');
-        if (!res.ok) return;
-        const skills = await res.json();
-        updateActiveSkillsBadge(skills.length);
-    } catch(e) { /* ignore */ }
-}
+function updateActiveSkillsBadge(count) { const badge = document.getElementById('activeSkillsBadge'); const el = document.getElementById('activeSkillsCount'); if (count > 0) { badge.classList.remove('hidden'); el.textContent = count + ' skill' + (count > 1 ? 's' : ''); } else { badge.classList.add('hidden'); } }
+function newSkill() { document.getElementById('skillEditId').value = ''; document.getElementById('skillName').value = ''; document.getElementById('skillDesc').value = ''; document.getElementById('skillContent').value = ''; }
+async function editSkill(id) { const s = await (await fetch(`/api/skills/${id}`)).json(); document.getElementById('skillEditId').value = s.id; document.getElementById('skillName').value = s.name; document.getElementById('skillDesc').value = s.description || ''; document.getElementById('skillContent').value = s.content || ''; showTab('skills'); }
+async function saveSkill() { const id = document.getElementById('skillEditId').value; const name = document.getElementById('skillName').value.trim(); if (!name) { alert('Nome obrigatório.'); return; } const body = { name, description: document.getElementById('skillDesc').value.trim(), content: document.getElementById('skillContent').value }; if (id) { await fetch(`/api/skills/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); } else { await fetch('/api/skills', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); } newSkill(); loadSkills(); }
+async function toggleSkillActive(id) { await fetch(`/api/skills/${id}/toggle`, { method: 'PUT' }); loadSkills(); }
+async function removeSkill(id, name) { if (!confirm(`Excluir "${name}"?`)) return; await fetch(`/api/skills/${id}`, { method: 'DELETE' }); loadSkills(); }
+async function loadActiveSkillsBadge() { try { const skills = await (await fetch('/api/skills/active')).json(); updateActiveSkillsBadge(skills.length); } catch(e) {} }
 
 // ============================
-// Auth & User Menu
-// ============================
-let currentUser = null;
-
-async function loadCurrentUser() {
-    try {
-        const res = await fetch('/api/auth/me');
-        if (!res.ok) { window.location.href = '/login'; return; }
-        currentUser = await res.json();
-        document.getElementById('userDisplayName').textContent = currentUser.display_name || currentUser.login;
-        document.getElementById('dropdownUserName').textContent = currentUser.display_name || currentUser.login;
-        const typeLabels = { superuser: 'Super Usuário', admin: 'Administrador', user: 'Usuário' };
-        document.getElementById('dropdownUserType').textContent = typeLabels[currentUser.user_type] || currentUser.user_type;
-
-        // Show users tab for admins/superusers
-        if (currentUser.user_type === 'superuser' || currentUser.user_type === 'admin') {
-            document.getElementById('tab-users').classList.remove('hidden');
-        }
-    } catch(e) {
-        window.location.href = '/login';
-    }
-}
-
-function toggleUserMenu() {
-    document.getElementById('userDropdown').classList.toggle('hidden');
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', (e) => {
-    const container = document.getElementById('userMenuContainer');
-    if (container && !container.contains(e.target)) {
-        document.getElementById('userDropdown').classList.add('hidden');
-    }
-});
-
-async function doLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
-}
-
-// ============================
-// User Management (admin)
+// Users
 // ============================
 async function loadUsers() {
-    try {
-        const res = await fetch('/api/users');
-        if (!res.ok) return;
-        const users = await res.json();
-        const tbody = document.getElementById('usersTableBody');
-        const typeLabels = { superuser: 'Super Usuário', admin: 'Administrador', user: 'Usuário' };
-        const typeColors = { superuser: 'text-fg-accent', admin: 'text-fg-blue', user: 'text-fg-muted' };
-
-        tbody.innerHTML = users.map(u => `
-            <tr class="hover:bg-fg-700/50 transition-colors">
-                <td class="px-4 py-2.5 font-mono text-fg-bright">${u.login}</td>
-                <td class="px-4 py-2.5 text-fg-text">${u.display_name || '—'}</td>
-                <td class="px-4 py-2.5"><span class="${typeColors[u.user_type] || 'text-fg-muted'} text-xs font-semibold">${typeLabels[u.user_type] || u.user_type}</span></td>
-                <td class="px-4 py-2.5 text-fg-muted text-xs max-w-[200px] truncate" title="${(u.profile_description||'').replace(/"/g,'&quot;')}">${u.profile_description || '—'}</td>
-                <td class="px-4 py-2.5 text-center">${u.is_active ? '<span class="text-fg-green text-xs">Ativo</span>' : '<span class="text-red-400 text-xs">Inativo</span>'}</td>
-                <td class="px-4 py-2.5 text-fg-muted text-xs font-mono">${u.created_at ? u.created_at.slice(0,16).replace('T',' ') : '—'}</td>
-                <td class="px-4 py-2.5 text-center">
-                    <div class="flex items-center justify-center gap-1">
-                        <button onclick="editUser(${u.id})" class="text-fg-muted hover:text-fg-blue text-xs transition-colors" title="Editar">Editar</button>
-                        <span class="text-fg-border">·</span>
-                        <button onclick="resetUserPassword(${u.id}, '${u.login}')" class="text-fg-muted hover:text-fg-accent text-xs transition-colors" title="Alterar Senha">Senha</button>
-                        ${u.user_type !== 'superuser' ? `<span class="text-fg-border">·</span><button onclick="removeUser(${u.id}, '${u.login}')" class="text-fg-muted hover:text-red-400 text-xs transition-colors" title="Excluir">Excluir</button>` : ''}
-                    </div>
-                </td>
-            </tr>
-        `).join('');
-    } catch(e) {
-        console.error('Erro ao carregar usuários:', e);
-    }
+    try { const users = await (await fetch('/api/users')).json(); const tbody = document.getElementById('usersTableBody');
+    const typeLabels = { root: 'Root', superuser: 'Super Usuário', admin: 'Administrador', user: 'Usuário' };
+    const typeColors = { root: 'text-red-400', superuser: 'text-fg-accent', admin: 'text-fg-blue', user: 'text-fg-muted' };
+    const dmMap = {}; allDatamarts.forEach(d => dmMap[d.id] = d.name);
+    tbody.innerHTML = users.map(u => {
+        const dmNames = (u.datamart_ids || []).map(id => dmMap[id] || id).join(', ') || '—';
+        return `<tr class="hover:bg-fg-700/50 transition-colors"><td class="px-4 py-2.5 font-mono text-fg-bright">${u.login}</td><td class="px-4 py-2.5 text-fg-text">${u.display_name || '—'}</td><td class="px-4 py-2.5"><span class="${typeColors[u.user_type] || 'text-fg-muted'} text-xs font-semibold">${typeLabels[u.user_type] || u.user_type}</span></td><td class="px-4 py-2.5 text-fg-muted text-xs max-w-[150px] truncate font-mono" title="${dmNames}">${dmNames}</td><td class="px-4 py-2.5 text-center">${u.is_active ? '<span class="text-fg-green text-xs">Ativo</span>' : '<span class="text-red-400 text-xs">Inativo</span>'}</td><td class="px-4 py-2.5 text-fg-muted text-xs font-mono">${u.created_at ? u.created_at.slice(0,16).replace('T',' ') : '—'}</td><td class="px-4 py-2.5 text-center"><div class="flex items-center justify-center gap-1"><button onclick="editUser(${u.id})" class="text-fg-muted hover:text-fg-blue text-xs transition-colors">Editar</button><span class="text-fg-border">·</span><button onclick="resetUserPassword(${u.id}, '${u.login}')" class="text-fg-muted hover:text-fg-accent text-xs transition-colors">Senha</button>${u.user_type !== 'root' ? `<span class="text-fg-border">·</span><button onclick="removeUser(${u.id}, '${u.login}')" class="text-fg-muted hover:text-red-400 text-xs transition-colors">Excluir</button>` : ''}</div></td></tr>`;
+    }).join('');
+    } catch(e) { console.error(e); }
 }
-
-function showCreateUserForm() {
-    document.getElementById('userFormPanel').classList.remove('hidden');
-    document.getElementById('userFormTitle').textContent = 'Novo Usuário';
-    document.getElementById('userFormId').value = '';
-    document.getElementById('userFormLogin').value = '';
-    document.getElementById('userFormPassword').value = '';
-    document.getElementById('userFormType').value = 'user';
-    document.getElementById('userFormName').value = '';
-    document.getElementById('userFormDesc').value = '';
-    document.getElementById('userFormLogin').disabled = false;
-    document.getElementById('userFormPassword').placeholder = 'Obrigatório';
-}
-
-async function editUser(userId) {
-    try {
-        const res = await fetch('/api/users');
-        const users = await res.json();
-        const u = users.find(x => x.id === userId);
-        if (!u) return;
-
-        document.getElementById('userFormPanel').classList.remove('hidden');
-        document.getElementById('userFormTitle').textContent = `Editar — ${u.login}`;
-        document.getElementById('userFormId').value = u.id;
-        document.getElementById('userFormLogin').value = u.login;
-        document.getElementById('userFormLogin').disabled = false;
-        document.getElementById('userFormPassword').value = '';
-        document.getElementById('userFormPassword').placeholder = 'Deixe vazio para manter';
-        document.getElementById('userFormType').value = u.user_type;
-        document.getElementById('userFormName').value = u.display_name || '';
-        document.getElementById('userFormDesc').value = u.profile_description || '';
-
-        // Superuser type option
-        if (currentUser.user_type === 'superuser') {
-            let opt = document.getElementById('userFormType').querySelector('option[value="superuser"]');
-            if (!opt) {
-                opt = document.createElement('option');
-                opt.value = 'superuser';
-                opt.textContent = 'Super Usuário';
-                document.getElementById('userFormType').appendChild(opt);
-            }
-        }
-    } catch(e) {
-        alert('Erro ao carregar dados do usuário.');
-    }
-}
-
-function hideUserForm() {
-    document.getElementById('userFormPanel').classList.add('hidden');
-    // Remove superuser option if present
-    const suOpt = document.getElementById('userFormType').querySelector('option[value="superuser"]');
-    if (suOpt) suOpt.remove();
-}
-
+function showCreateUserForm() { document.getElementById('userFormPanel').classList.remove('hidden'); document.getElementById('userFormTitle').textContent = 'Novo Usuário'; document.getElementById('userFormId').value = ''; document.getElementById('userFormLogin').value = ''; document.getElementById('userFormPassword').value = ''; document.getElementById('userFormType').value = 'user'; document.getElementById('userFormName').value = ''; document.getElementById('userFormDesc').value = ''; document.getElementById('userFormLogin').disabled = false; document.getElementById('userFormPassword').placeholder = 'Obrigatório'; renderUserFormDatamarts([]); }
+async function editUser(userId) { const users = await (await fetch('/api/users')).json(); const u = users.find(x => x.id === userId); if (!u) return; document.getElementById('userFormPanel').classList.remove('hidden'); document.getElementById('userFormTitle').textContent = 'Editar — ' + u.login; document.getElementById('userFormId').value = u.id; document.getElementById('userFormLogin').value = u.login; document.getElementById('userFormPassword').value = ''; document.getElementById('userFormPassword').placeholder = 'Vazio = manter'; document.getElementById('userFormType').value = u.user_type; document.getElementById('userFormName').value = u.display_name || ''; document.getElementById('userFormDesc').value = u.profile_description || ''; renderUserFormDatamarts(u.datamart_ids || []); }
+function hideUserForm() { document.getElementById('userFormPanel').classList.add('hidden'); }
 async function saveUser() {
-    const id = document.getElementById('userFormId').value;
-    const login = document.getElementById('userFormLogin').value.trim();
-    const password = document.getElementById('userFormPassword').value;
-    const userType = document.getElementById('userFormType').value;
-    const displayName = document.getElementById('userFormName').value.trim();
-    const profileDesc = document.getElementById('userFormDesc').value.trim();
-
-    if (!login) { alert('Login é obrigatório.'); return; }
-
-    try {
-        if (id) {
-            // Update
-            await fetch(`/api/users/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ login, user_type: userType, display_name: displayName, profile_description: profileDesc }),
-            });
-            if (password) {
-                await fetch(`/api/users/${id}/password`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ new_password: password }),
-                });
-            }
-        } else {
-            // Create
-            if (!password) { alert('Senha é obrigatória para novo usuário.'); return; }
-            const res = await fetch('/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ login, password, user_type: userType, display_name: displayName, profile_description: profileDesc }),
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                alert(err.detail || 'Erro ao criar usuário.');
-                return;
-            }
-        }
-        hideUserForm();
-        loadUsers();
-    } catch(e) {
-        alert('Erro ao salvar: ' + e.message);
-    }
+    const id = document.getElementById('userFormId').value; const login = document.getElementById('userFormLogin').value.trim();
+    const password = document.getElementById('userFormPassword').value; const userType = document.getElementById('userFormType').value;
+    const displayName = document.getElementById('userFormName').value.trim(); const profileDesc = document.getElementById('userFormDesc').value.trim();
+    if (!login) { alert('Login obrigatório.'); return; }
+    try { if (id) {
+        await fetch(`/api/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login, user_type: userType, display_name: displayName, profile_description: profileDesc, datamart_ids: getUserFormDatamartIds() }) });
+        if (password) await fetch(`/api/users/${id}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_password: password }) });
+    } else { if (!password) { alert('Senha obrigatória.'); return; }
+        const res = await fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login, password, user_type: userType, display_name: displayName, profile_description: profileDesc, datamart_ids: getUserFormDatamartIds() }) });
+        if (!res.ok) { const e = await res.json(); alert(e.detail || 'Erro.'); return; }
+    } hideUserForm(); loadUsers(); } catch(e) { alert('Erro: ' + e.message); }
 }
+async function resetUserPassword(userId, login) { const pwd = prompt(`Nova senha para "${login}":`); if (!pwd || pwd.length < 3) return; const res = await fetch(`/api/users/${userId}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_password: pwd }) }); if (res.ok) alert('Senha alterada.'); else { const e = await res.json(); alert(e.detail || 'Erro.'); } }
+async function removeUser(userId, login) { if (!confirm(`Excluir "${login}"?`)) return; const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' }); if (res.ok) loadUsers(); else { const e = await res.json(); alert(e.detail || 'Erro.'); } }
 
-async function resetUserPassword(userId, login) {
-    const pwd = prompt(`Nova senha para "${login}":`);
-    if (!pwd || pwd.length < 3) { if (pwd !== null) alert('Senha deve ter no mínimo 3 caracteres.'); return; }
-    try {
-        const res = await fetch(`/api/users/${userId}/password`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ new_password: pwd }),
-        });
-        if (res.ok) alert('Senha alterada.');
-        else { const e = await res.json(); alert(e.detail || 'Erro.'); }
-    } catch(e) { alert('Erro: ' + e.message); }
+// ============================
+// Auth
+// ============================
+async function loadCurrentUser() {
+    try { const res = await fetch('/api/auth/me'); if (!res.ok) { window.location.href = '/login'; return; }
+    currentUser = await res.json();
+    document.getElementById('userDisplayName').textContent = currentUser.display_name || currentUser.login;
+    document.getElementById('dropdownUserName').textContent = currentUser.display_name || currentUser.login;
+    const typeLabels = { root: 'Root', superuser: 'Super Usuário', admin: 'Administrador', user: 'Usuário' };
+    document.getElementById('dropdownUserType').textContent = typeLabels[currentUser.user_type] || currentUser.user_type;
+    if (['root','superuser','admin'].includes(currentUser.user_type)) document.getElementById('tab-users').classList.remove('hidden');
+    } catch(e) { window.location.href = '/login'; }
 }
-
-async function removeUser(userId, login) {
-    if (!confirm(`Excluir o usuário "${login}"? Esta ação é irreversível.`)) return;
-    try {
-        const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
-        if (res.ok) loadUsers();
-        else { const e = await res.json(); alert(e.detail || 'Erro.'); }
-    } catch(e) { alert('Erro: ' + e.message); }
-}
+function toggleUserMenu() { document.getElementById('userDropdown').classList.toggle('hidden'); }
+document.addEventListener('click', (e) => { const c = document.getElementById('userMenuContainer'); if (c && !c.contains(e.target)) document.getElementById('userDropdown').classList.add('hidden'); });
+async function doLogout() { await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/login'; }
 
 // ============================
 // Init
@@ -1864,7 +778,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCurrentUser();
     loadAnalysisTypeSelector();
     loadActiveSkillsBadge();
+    loadDatamarts();
+    loadUserDatamarts();
 });
 </script>
+<script src="/static/v21_features.js"></script>
 </body>
 </html>
