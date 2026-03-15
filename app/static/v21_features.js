@@ -1,0 +1,238 @@
+// ============================
+// Quick Insights v2.1 — New Features
+// ============================
+
+// --- DataMart state ---
+let userDatamarts = [];
+let allDatamarts = [];
+
+async function loadDatamarts() {
+    try {
+        const res = await fetch('/api/datamarts');
+        if (res.ok) allDatamarts = await res.json();
+        populateUploadDatamart();
+    } catch(e) {}
+}
+
+async function loadUserDatamarts() {
+    try {
+        const res = await fetch('/api/datamarts/user');
+        if (res.ok) userDatamarts = await res.json();
+        renderDatamartSelector();
+    } catch(e) {}
+}
+
+function populateUploadDatamart() {
+    const sel = document.getElementById('uploadDatamart');
+    if (!sel) return;
+    sel.innerHTML = allDatamarts.map(dm =>
+        `<option value="${dm.name}" ${dm.name === 'default' ? 'selected' : ''}>${escapeHtml(dm.name)}</option>`
+    ).join('');
+}
+
+function renderDatamartSelector() {
+    const container = document.getElementById('datamartSelector');
+    if (!container || !userDatamarts.length) return;
+    let html = '<span class="text-[10px] text-fg-muted uppercase tracking-wider mr-1">DataMarts</span>';
+    html += userDatamarts.map(dm =>
+        `<label class="inline-flex items-center gap-1.5 text-xs bg-fg-700 border border-fg-border rounded-full px-2.5 py-1 cursor-pointer hover:border-fg-blue transition">
+            <input type="checkbox" value="${dm.id}" class="dm-check accent-[#58a6ff] w-3 h-3" checked>
+            <span class="text-fg-text">${escapeHtml(dm.name)}</span>
+        </label>`
+    ).join('');
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+}
+
+function getSelectedDatamartIds() {
+    return Array.from(document.querySelectorAll('.dm-check:checked')).map(c => parseInt(c.value));
+}
+
+// --- Chart submenu ---
+let chartMenuOpen = false;
+
+async function openChartMenu(btn) {
+    if (chartMenuOpen) { closeChartMenu(); return; }
+    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) {
+        alert('Sem dados para gráfico.'); return;
+    }
+    let options;
+    try {
+        const res = await fetch('/api/chart/options', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(lastQueryData),
+        });
+        const data = await res.json();
+        options = data.options || [];
+    } catch(e) {
+        options = [
+            {type:'auto',label:'Auto (LLM)',icon:'\u2728',suitable:true},
+            {type:'bar',label:'Barras',icon:'\uD83D\uDCCA',suitable:true},
+            {type:'line',label:'Linhas',icon:'\uD83D\uDCC8',suitable:true},
+            {type:'scatter',label:'Dispersão',icon:'\u26A1',suitable:true},
+            {type:'area',label:'Área',icon:'\uD83C\uDFD4',suitable:true},
+            {type:'pie',label:'Pizza',icon:'\uD83E\uDD67',suitable:true},
+            {type:'doughnut',label:'Rosca',icon:'\uD83C\uDF69',suitable:true},
+            {type:'radar',label:'Radar',icon:'\uD83D\uDD78',suitable:true},
+            {type:'polarArea',label:'Polar',icon:'\uD83C\uDFAF',suitable:true},
+        ];
+    }
+    showChartPopup(btn, options);
+}
+
+function showChartPopup(btn, options) {
+    closeChartMenu();
+    const menu = document.createElement('div');
+    menu.id = 'chartSubmenu';
+    menu.className = 'fixed z-50 bg-[#161b22] border border-[#30363d] rounded-xl shadow-2xl p-1.5 min-w-[170px]';
+    menu.style.animation = 'fadeIn 0.2s';
+    const rect = btn.getBoundingClientRect();
+    menu.style.left = rect.left + 'px';
+    menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+    menu.innerHTML = options.map(o => {
+        const cls = o.suitable
+            ? 'text-[#c9d1d9] hover:bg-[rgba(255,99,71,0.15)] hover:text-[#ff6347] cursor-pointer'
+            : 'text-[#484f58] cursor-not-allowed';
+        return `<div onclick="${o.suitable ? "openTypedChart('" + o.type + "')" : ''}"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition ${cls}">
+            <span class="w-4 text-center">${o.icon}</span><span>${o.label}</span>
+        </div>`;
+    }).join('');
+    document.body.appendChild(menu);
+    chartMenuOpen = true;
+    setTimeout(() => document.addEventListener('click', _closeChartClick), 10);
+}
+
+function closeChartMenu() {
+    const m = document.getElementById('chartSubmenu');
+    if (m) m.remove();
+    chartMenuOpen = false;
+    document.removeEventListener('click', _closeChartClick);
+}
+
+function _closeChartClick(e) {
+    if (!e.target.closest('#chartSubmenu') && !e.target.closest('.chart-menu-btn')) closeChartMenu();
+}
+
+async function openTypedChart(type) {
+    closeChartMenu();
+    if (!lastQueryData) return;
+    appendMessage('loading', '');
+    try {
+        const url = type === 'auto' ? '/api/chart' : '/api/chart/typed';
+        const body = type === 'auto'
+            ? JSON.stringify(lastQueryData)
+            : JSON.stringify({ chart_type: type, query_data: lastQueryData });
+        const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body });
+        removeLoading();
+        if (!res.ok) { appendMessage('error', 'Erro ao gerar gráfico'); return; }
+        const html = await res.text();
+        const w = window.open('', '_blank', 'width=1400,height=850');
+        if (w) { w.document.write(html); w.document.close(); }
+        appendMessage('assistant',
+            '<div class="flex items-center gap-2 text-sm"><span class="text-[#39d353]">&#x2713;</span> Gráfico <strong>' + type + '</strong> aberto em nova aba.</div>', true);
+    } catch(e) { removeLoading(); appendMessage('error', 'Erro: ' + e.message); }
+}
+
+// --- User Export/Import ---
+async function exportUsers() {
+    const res = await fetch('/api/users/export');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'users_export.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function importUsers() {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
+    input.onchange = async () => {
+        const fd = new FormData(); fd.append('file', input.files[0]);
+        try {
+            const res = await fetch('/api/users/import', { method: 'POST', body: fd });
+            const d = await res.json();
+            alert('Importados: ' + d.total + (d.errors.length ? '\nErros: ' + d.errors.join('; ') : ''));
+            loadUsers();
+        } catch(e) { alert('Erro: ' + e.message); }
+    };
+    input.click();
+}
+
+// --- Skill Export/Import ---
+async function exportSkills() {
+    const res = await fetch('/api/skills/export/excel');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'skills_export.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function importSkills() {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
+    input.onchange = async () => {
+        const fd = new FormData(); fd.append('file', input.files[0]);
+        try {
+            const res = await fetch('/api/skills/import', { method: 'POST', body: fd });
+            const d = await res.json();
+            alert('Importados: ' + d.total + (d.errors.length ? '\nErros: ' + d.errors.join('; ') : ''));
+            loadSkills();
+        } catch(e) { alert('Erro: ' + e.message); }
+    };
+    input.click();
+}
+
+// --- DataMart Admin ---
+async function loadDatamartsAdmin() {
+    await loadDatamarts();
+    const el = document.getElementById('datamartAdminList');
+    if (!el) return;
+    if (!allDatamarts.length) { el.innerHTML = '<p class="text-xs text-[#8b949e]">Nenhum DataMart.</p>'; return; }
+    el.innerHTML = allDatamarts.map(dm => {
+        const tbl = (dm.tables || []).join(', ') || 'nenhuma';
+        return `<div class="bg-[#0a0c10] rounded-lg px-3 py-2.5 border border-[#30363d] group hover:border-[rgba(88,166,255,0.3)] transition">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-[#58a6ff] font-mono font-bold">${escapeHtml(dm.name)}</span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-[#8b949e]">${(dm.tables||[]).length} tabelas</span>
+                    ${dm.name !== 'default' ? '<button onclick="deleteDatamart(' + dm.id + ')" class="text-[#8b949e] hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-[10px]">excluir</button>' : ''}
+                </div>
+            </div>
+            <p class="text-[10px] text-[#8b949e] mt-1 font-mono truncate">${escapeHtml(tbl)}</p>
+        </div>`;
+    }).join('');
+}
+
+async function createDatamart() {
+    const name = prompt('Nome do novo DataMart:');
+    if (!name || name.length < 2) return;
+    try {
+        const res = await fetch('/api/datamarts', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ name, description: '' }),
+        });
+        if (!res.ok) { const e = await res.json(); alert(e.detail || 'Erro'); return; }
+        loadDatamartsAdmin(); loadUserDatamarts();
+    } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function deleteDatamart(id) {
+    if (!confirm('Excluir este DataMart?')) return;
+    try { await fetch('/api/datamarts/' + id, { method: 'DELETE' }); loadDatamartsAdmin(); loadUserDatamarts(); }
+    catch(e) { alert('Erro: ' + e.message); }
+}
+
+// --- User form DataMart checkboxes ---
+function renderUserFormDatamarts(selectedIds) {
+    const el = document.getElementById('userFormDatamarts');
+    if (!el) return;
+    const ids = new Set(selectedIds || []);
+    el.innerHTML = allDatamarts.map(dm =>
+        `<label class="inline-flex items-center gap-1.5 text-xs cursor-pointer">
+            <input type="checkbox" value="${dm.id}" class="uf-dm-check accent-[#58a6ff] w-3 h-3" ${ids.has(dm.id) ? 'checked' : ''}>
+            <span>${escapeHtml(dm.name)}</span>
+        </label>`
+    ).join('');
+}
+
+function getUserFormDatamartIds() {
+    return Array.from(document.querySelectorAll('.uf-dm-check:checked')).map(c => parseInt(c.value));
+}
