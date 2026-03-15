@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Insights - Fala Gaiotto</title>
+    <title>Quick Insights — Fala Gaiotto</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,9 +42,10 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         .shimmer { background: linear-gradient(90deg, #161b22 25%, #1c2128 50%, #161b22 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .table-container { max-height: 420px; overflow: auto; }
+        .table-container { max-height: 450px; overflow: auto; border-radius: 8px; }
         .table-container table { border-collapse: collapse; width: 100%; }
         .table-container th { position: sticky; top: 0; z-index: 1; }
+        .table-container tbody tr:last-child td { border-bottom: none; }
         .tab-active { color: #ff6347; position: relative; }
         .tab-active::after { content: ''; position: absolute; bottom: -12px; left: 0; right: 0; height: 2px; background: #ff6347; border-radius: 1px; }
         .glow-accent { box-shadow: 0 0 20px rgba(255, 99, 71, 0.08); }
@@ -499,16 +500,39 @@ async function sendQuery() {
 
 function renderTable(data) {
     if (!data.columns || !data.rows) return '';
-    let h = '<div class="table-container mt-3 rounded-lg border border-fg-border"><table><thead><tr>';
-    data.columns.forEach(c => { h += `<th class="bg-fg-900 text-fg-accent text-[10px] uppercase tracking-wider font-mono px-3 py-2.5 text-left border-b border-fg-border">${escapeHtml(c)}</th>`; });
+    // Detect numeric columns from first 5 rows
+    const numCols = new Set();
+    data.columns.forEach(c => {
+        const sample = data.rows.slice(0, 5).map(r => r[c]);
+        if (sample.every(v => v === null || v === undefined || v === '' || (!isNaN(Number(v)) && String(v).trim() !== ''))) numCols.add(c);
+    });
+    function fmtCell(val, col) {
+        if (val === null || val === undefined || val === '') return '<span class="text-fg-muted/40">—</span>';
+        if (numCols.has(col)) {
+            const n = Number(val);
+            if (!isNaN(n)) {
+                if (Number.isInteger(n)) return n.toLocaleString('pt-BR');
+                return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        }
+        return escapeHtml(String(val));
+    }
+    let h = '<div class="table-container mt-3 rounded-lg border border-fg-border overflow-hidden"><table style="min-width:100%"><thead><tr>';
+    data.columns.forEach(c => {
+        const align = numCols.has(c) ? 'text-right' : 'text-left';
+        h += `<th class="bg-fg-900 text-fg-accent text-[10px] uppercase tracking-wider font-mono px-4 py-2.5 ${align} border-b-2 border-fg-accent/20 whitespace-nowrap">${escapeHtml(c)}</th>`;
+    });
     h += '</tr></thead><tbody>';
     data.rows.forEach((row, i) => {
-        h += `<tr class="${i % 2 === 0 ? 'bg-fg-800' : 'bg-fg-700/50'} hover:bg-fg-600/50 transition-colors">`;
-        data.columns.forEach(c => { h += `<td class="text-xs px-3 py-2 border-b border-fg-border/50 font-mono">${escapeHtml(String(row[c] ?? ''))}</td>`; });
+        h += `<tr class="${i % 2 === 0 ? 'bg-fg-800' : 'bg-fg-700/30'} hover:bg-fg-600/40 transition-colors">`;
+        data.columns.forEach(c => {
+            const align = numCols.has(c) ? 'text-right' : 'text-left';
+            h += `<td class="text-xs px-4 py-2 border-b border-fg-border/30 font-mono ${align} whitespace-nowrap">${fmtCell(row[c], c)}</td>`;
+        });
         h += '</tr>';
     });
     h += '</tbody></table></div>';
-    h += `<p class="text-[10px] text-fg-muted mt-1.5 font-mono">${data.rows.length} registro(s)</p>`;
+    h += `<div class="flex items-center gap-2 mt-1.5"><span class="text-[10px] text-fg-muted font-mono">${data.rows.length} registro(s)</span><span class="text-[10px] text-fg-muted">·</span><span class="text-[10px] text-fg-muted font-mono">${data.columns.length} colunas</span></div>`;
     return h;
 }
 
@@ -527,7 +551,7 @@ function appendMessage(role, content, isHtml = false) {
     if (chat.querySelector('.text-center')) chat.innerHTML = '';
     const div = document.createElement('div'); div.className = 'fade-in';
     if (role === 'user') { div.innerHTML = `<div class="flex justify-end"><div class="bg-fg-accent/10 border border-fg-accent/20 rounded-xl px-4 py-2.5 max-w-[80%] text-sm">${escapeHtml(content)}</div></div>`; }
-    else if (role === 'loading') { div.id = 'loadingMsg'; div.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Deep Agent analisando...</div>`; }
+    else if (role === 'loading') { div.id = 'loadingMsg'; div.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Quick-Insights analisando...</div>`; }
     else if (role === 'error') { div.innerHTML = `<div class="bg-red-900/15 border border-red-800/40 rounded-xl px-4 py-2.5 text-sm text-red-400">${escapeHtml(content)}</div>`; }
     else { div.innerHTML = `<div class="bg-fg-700/50 border border-fg-border rounded-xl px-4 py-3 text-sm max-w-full overflow-hidden">${isHtml ? content : escapeHtml(content)}</div>`; }
     chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
