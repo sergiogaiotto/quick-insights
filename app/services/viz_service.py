@@ -2,7 +2,7 @@
 Quick Insights — Visualization Service
 
 - Explorar: PyGWalker (drag-and-drop livre)
-- Gráfico: Chart.js com config LLM (renderização imediata)
+- Gráfico: Chart.js com config LLM ou tipo selecionado pelo usuário
 - Galeria: Chart.js com config salva (dados + gráfico persistidos)
 """
 
@@ -46,7 +46,6 @@ Amostra (primeiras 5 linhas):
 
 
 def _ask_llm_for_chart_config(df: pd.DataFrame) -> dict | None:
-    """Ask the LLM to recommend a chart configuration based on data shape."""
     if not settings.openai_api_key:
         return None
     try:
@@ -74,12 +73,11 @@ def _ask_llm_for_chart_config(df: pd.DataFrame) -> dict | None:
         return None
 
 
-def _fallback_chart_config(df: pd.DataFrame) -> dict:
-    """Fallback config when LLM is unavailable."""
+def _fallback_chart_config(df: pd.DataFrame, chart_type: str = "bar") -> dict:
     numeric = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
     non_numeric = [c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
     return {
-        "chart_type": "bar",
+        "chart_type": chart_type,
         "x_field": non_numeric[0] if non_numeric else df.columns[0],
         "y_field": numeric[0] if numeric else df.columns[-1],
         "color_field": None,
@@ -87,18 +85,40 @@ def _fallback_chart_config(df: pd.DataFrame) -> dict:
     }
 
 
-def get_chart_config_for_data(data: dict) -> dict:
-    """
-    Public function: generate chart config for query data.
-    Called by gallery save route to persist the config.
-    """
+# ---------------------------------------------------------------------------
+# Chart options analysis (for submenu)
+# ---------------------------------------------------------------------------
+
+def get_chart_options_for_data(data: dict) -> dict:
+    """Analyze data and return available chart types with suitability."""
     df = _data_to_df(data)
     if df is None:
-        return {"chart_type": "bar", "x_field": "", "y_field": "", "agg": "sum"}
-    config = _ask_llm_for_chart_config(df)
-    if not config:
-        config = _fallback_chart_config(df)
-    return config
+        return {"options": []}
+
+    numeric = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    non_numeric = [c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
+    n_rows = len(df)
+    n_categories = len(non_numeric)
+    n_metrics = len(numeric)
+
+    options = [
+        {"type": "auto", "label": "Auto (LLM)", "icon": "✨", "suitable": True},
+        {"type": "bar", "label": "Barras", "icon": "📊", "suitable": n_categories > 0 or n_metrics > 0},
+        {"type": "line", "label": "Linhas", "icon": "📈", "suitable": n_metrics > 0 and n_rows > 2},
+        {"type": "scatter", "label": "Dispersão", "icon": "⚡", "suitable": n_metrics >= 2},
+        {"type": "area", "label": "Área", "icon": "🗻", "suitable": n_metrics > 0 and n_rows > 2},
+        {"type": "pie", "label": "Pizza", "icon": "🥧", "suitable": n_categories > 0 and n_metrics > 0 and n_rows <= 20},
+        {"type": "doughnut", "label": "Rosca", "icon": "🍩", "suitable": n_categories > 0 and n_metrics > 0 and n_rows <= 20},
+        {"type": "radar", "label": "Radar", "icon": "🕸️", "suitable": n_metrics >= 3 and n_rows <= 15},
+        {"type": "polarArea", "label": "Polar", "icon": "🎯", "suitable": n_categories > 0 and n_metrics > 0 and n_rows <= 12},
+    ]
+
+    return {
+        "options": options,
+        "numeric_cols": numeric,
+        "categorical_cols": non_numeric,
+        "row_count": n_rows,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +134,6 @@ def _data_to_df(data: dict) -> pd.DataFrame | None:
 
 
 def _aggregate_data(df: pd.DataFrame, config: dict) -> tuple[list, list]:
-    """Aggregate DataFrame according to chart config. Returns (labels, values)."""
     x_field = config.get("x_field", df.columns[0])
     y_field = config.get("y_field", df.columns[-1])
     agg = config.get("agg", "sum")
@@ -138,8 +157,21 @@ def _aggregate_data(df: pd.DataFrame, config: dict) -> tuple[list, list]:
 
 
 # ---------------------------------------------------------------------------
-# Chart.js renderer (reusable for Gráfico + Galeria)
+# Chart.js renderer
 # ---------------------------------------------------------------------------
+
+_PALETTE = [
+    'rgba(255,99,71,0.7)', 'rgba(88,166,255,0.7)', 'rgba(57,211,83,0.7)',
+    'rgba(240,136,62,0.7)', 'rgba(163,113,247,0.7)', 'rgba(63,185,80,0.7)',
+    'rgba(210,168,255,0.7)', 'rgba(121,192,255,0.7)', 'rgba(255,166,87,0.7)',
+    'rgba(255,123,114,0.7)',
+]
+
+_PALETTE_SOLID = [
+    '#ff6347', '#58a6ff', '#39d353', '#f0883e', '#a371f7',
+    '#3fb950', '#d2a8ff', '#79c0ff', '#ffa657', '#ff7b72',
+]
+
 
 def _render_chartjs_html(
     data: dict,
@@ -147,7 +179,6 @@ def _render_chartjs_html(
     title: str = "Gráfico",
     subtitle: str = "Gráfico Auto-Configurado",
 ) -> str:
-    """Render a full-page Chart.js visualization from data + chart config."""
     df = _data_to_df(data)
     if df is None:
         return _empty_html()
@@ -164,12 +195,19 @@ def _render_chartjs_html(
 
     labels, values = _aggregate_data(df, config)
 
-    cjs_type_map = {"bar": "bar", "line": "line", "scatter": "scatter", "area": "line"}
+    # Map chart types to Chart.js
+    cjs_type_map = {
+        "bar": "bar", "line": "line", "scatter": "scatter", "area": "line",
+        "pie": "pie", "doughnut": "doughnut", "radar": "radar", "polarArea": "polarArea",
+    }
     cjs_type = cjs_type_map.get(chart_type, "bar")
     fill = "true" if chart_type == "area" else "false"
+    is_circular = chart_type in ("pie", "doughnut", "polarArea")
 
     labels_json = json.dumps(labels, ensure_ascii=False)
     values_json = json.dumps(values)
+    palette_json = json.dumps(_PALETTE[:len(labels)])
+    palette_solid_json = json.dumps(_PALETTE_SOLID[:len(labels)])
     row_count = len(data.get("rows", []))
     col_count = len(df.columns)
 
@@ -189,17 +227,52 @@ def _render_chartjs_html(
                     pointRadius: 5,
                     pointHoverRadius: 7,
                 }}"""
+    elif is_circular:
+        dataset_config = f"""{{
+                    label: '{y_field}',
+                    data: {values_json},
+                    backgroundColor: {palette_json},
+                    borderColor: '#0d1117',
+                    borderWidth: 2,
+                }}"""
+    elif cjs_type == "radar":
+        dataset_config = f"""{{
+                    label: '{y_field}',
+                    data: {values_json},
+                    backgroundColor: 'rgba(255,99,71,0.2)',
+                    borderColor: '#ff6347',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#ff6347',
+                }}"""
     else:
         dataset_config = f"""{{
                     label: '{y_field}',
                     data: {values_json},
-                    backgroundColor: 'rgba(255,99,71,0.35)',
+                    backgroundColor: {'rgba(255,99,71,0.35)' if not is_circular else palette_json},
                     borderColor: '#ff6347',
                     borderWidth: 2,
                     fill: {fill},
                     tension: 0.3,
                     borderRadius: {('4' if cjs_type == 'bar' else '0')},
                 }}"""
+
+    # Scale options (not used for circular/radar charts)
+    scales_js = ""
+    if not is_circular and cjs_type != "radar":
+        scales_js = f"""
+                scales: {{
+                    x: {{
+                        ticks: {{ color: '#8b949e', maxRotation: 45, font: {{ size: 11 }} }},
+                        grid: {{ color: '#21262d' }},
+                        title: {{ display: true, text: '{x_field}', color: '#c9d1d9', font: {{ size: 12, weight: 600 }} }},
+                    }},
+                    y: {{
+                        ticks: {{ color: '#8b949e', font: {{ size: 11 }} }},
+                        grid: {{ color: '#21262d' }},
+                        title: {{ display: true, text: '{y_field}', color: '#c9d1d9', font: {{ size: 12, weight: 600 }} }},
+                        beginAtZero: true,
+                    }},
+                }},"""
 
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
@@ -259,19 +332,7 @@ def _render_chartjs_html(
                         cornerRadius: 8,
                     }},
                 }},
-                scales: {{
-                    x: {{
-                        ticks: {{ color: '#8b949e', maxRotation: 45, font: {{ size: 11 }} }},
-                        grid: {{ color: '#21262d' }},
-                        title: {{ display: true, text: '{x_field}', color: '#c9d1d9', font: {{ size: 12, weight: 600 }} }},
-                    }},
-                    y: {{
-                        ticks: {{ color: '#8b949e', font: {{ size: 11 }} }},
-                        grid: {{ color: '#21262d' }},
-                        title: {{ display: true, text: '{y_field}', color: '#c9d1d9', font: {{ size: 12, weight: 600 }} }},
-                        beginAtZero: true,
-                    }},
-                }},
+                {scales_js}
                 animation: {{ duration: 600, easing: 'easeOutQuart' }},
             }}
         }});
@@ -301,8 +362,6 @@ def generate_explore_html(data: dict) -> str:
     <div class="qi-toolbar">
         <button onclick="saveToGallery()" class="qi-btn qi-btn-save">Salvar na Galeria</button>
     </div>
-
-    <!-- Save Modal -->
     <div id="saveModal" class="qi-modal" style="display:none">
         <div class="qi-modal-content">
             <h3>Salvar na Galeria de Análises</h3>
@@ -321,75 +380,33 @@ def generate_explore_html(data: dict) -> str:
             <div id="saveStatus" style="margin-top:8px;font-size:11px"></div>
         </div>
     </div>
-
     <script>
         const _queryData = {data_json};
-
-        function saveToGallery() {{
-            document.getElementById('saveModal').style.display = 'flex';
-            document.getElementById('saveTitle').focus();
-        }}
-
-        function closeSaveModal() {{
-            document.getElementById('saveModal').style.display = 'none';
-            document.getElementById('saveStatus').textContent = '';
-        }}
-
+        function saveToGallery() {{ document.getElementById('saveModal').style.display = 'flex'; document.getElementById('saveTitle').focus(); }}
+        function closeSaveModal() {{ document.getElementById('saveModal').style.display = 'none'; document.getElementById('saveStatus').textContent = ''; }}
         async function confirmSave() {{
             const title = document.getElementById('saveTitle').value.trim();
             if (!title) {{ alert('Informe um título.'); return; }}
             const desc = document.getElementById('saveDesc').value.trim();
             const statusEl = document.getElementById('saveStatus');
-            statusEl.style.color = '#8b949e';
-            statusEl.textContent = 'Capturando estado...';
-
-            // 1. Hide toolbar + modal so they don't appear in saved HTML
+            statusEl.style.color = '#8b949e'; statusEl.textContent = 'Capturando estado...';
             const toolbar = document.querySelector('.qi-toolbar');
             const modal = document.getElementById('saveModal');
-            const toolbarDisplay = toolbar ? toolbar.style.display : '';
-            const modalDisplay = modal ? modal.style.display : '';
+            const td = toolbar ? toolbar.style.display : '';
+            const md = modal ? modal.style.display : '';
             if (toolbar) toolbar.style.display = 'none';
             if (modal) modal.style.display = 'none';
-
-            // 2. Capture full page HTML (includes PyGWalker rendered state)
             const pageHtml = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-
-            // 3. Restore toolbar + modal
-            if (toolbar) toolbar.style.display = toolbarDisplay;
+            if (toolbar) toolbar.style.display = td;
             if (modal) modal.style.display = 'flex';
-
-            // 4. Capture localStorage (PyGWalker persists chart config here)
             const lsData = {{}};
-            for (let i = 0; i < localStorage.length; i++) {{
-                const key = localStorage.key(i);
-                lsData[key] = localStorage.getItem(key);
-            }}
-
+            for (let i = 0; i < localStorage.length; i++) {{ const key = localStorage.key(i); lsData[key] = localStorage.getItem(key); }}
             statusEl.textContent = 'Salvando...';
             try {{
-                const res = await fetch('/api/gallery', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
-                        title,
-                        description: desc,
-                        query_data: _queryData,
-                        page_html: pageHtml,
-                        local_storage: lsData,
-                    }}),
-                }});
-                if (res.ok) {{
-                    statusEl.style.color = '#39d353';
-                    statusEl.textContent = 'Salvo na galeria.';
-                    setTimeout(closeSaveModal, 1500);
-                }} else {{
-                    statusEl.style.color = '#ff6347';
-                    statusEl.textContent = 'Erro ao salvar.';
-                }}
-            }} catch(e) {{
-                statusEl.style.color = '#ff6347';
-                statusEl.textContent = 'Erro: ' + e.message;
-            }}
+                const res = await fetch('/api/gallery', {{ method: 'POST', headers: {{ 'Content-Type': 'application/json' }}, body: JSON.stringify({{ title, description: desc, query_data: _queryData, page_html: pageHtml, local_storage: lsData }}) }});
+                if (res.ok) {{ statusEl.style.color = '#39d353'; statusEl.textContent = 'Salvo na galeria.'; setTimeout(closeSaveModal, 1500); }}
+                else {{ statusEl.style.color = '#ff6347'; statusEl.textContent = 'Erro ao salvar.'; }}
+            }} catch(e) {{ statusEl.style.color = '#ff6347'; statusEl.textContent = 'Erro: ' + e.message; }}
         }}
     </script>
     """
@@ -444,7 +461,7 @@ def generate_explore_html(data: dict) -> str:
 
 
 def generate_chart_html(data: dict) -> str:
-    """Chart.js with LLM-recommended config. Renders immediately."""
+    """Chart.js with LLM-recommended config."""
     df = _data_to_df(data)
     if df is None:
         return _empty_html()
@@ -452,8 +469,20 @@ def generate_chart_html(data: dict) -> str:
     return _render_chartjs_html(data, config, "Gráfico", "Gráfico Auto-Configurado")
 
 
+def generate_typed_chart_html(data: dict, chart_type: str) -> str:
+    """Chart.js with user-selected chart type."""
+    if chart_type == "auto":
+        return generate_chart_html(data)
+    df = _data_to_df(data)
+    if df is None:
+        return _empty_html()
+    # Use LLM for field selection but override chart_type
+    config = _ask_llm_for_chart_config(df) or _fallback_chart_config(df, chart_type)
+    config["chart_type"] = chart_type
+    return _render_chartjs_html(data, config, "Gráfico", f"Gráfico — {chart_type.title()}")
+
+
 def generate_gallery_view_html(data: dict, chart_config: dict | None, title: str) -> str:
-    """Chart.js with saved config. Exact same chart that was generated at save time."""
     df = _data_to_df(data)
     if df is None:
         return _empty_html()
