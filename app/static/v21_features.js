@@ -114,24 +114,15 @@ function _closeChartClick(e) {
     if (!e.target.closest('#chartSubmenu') && !e.target.closest('.chart-menu-btn')) closeChartMenu();
 }
 
-async function openTypedChart(type) {
+function openTypedChart(type) {
     closeChartMenu();
     if (!lastQueryData) return;
-    appendMessage('loading', '');
-    try {
-        const url = type === 'auto' ? '/api/chart' : '/api/chart/typed';
-        const body = type === 'auto'
-            ? JSON.stringify(lastQueryData)
-            : JSON.stringify({ chart_type: type, query_data: lastQueryData });
-        const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body });
-        removeLoading();
-        if (!res.ok) { appendMessage('error', 'Erro ao gerar gráfico'); return; }
-        const html = await res.text();
-        const w = window.open('', '_blank', 'width=1400,height=850');
-        if (w) { w.document.write(html); w.document.close(); }
-        appendMessage('assistant',
-            '<div class="flex items-center gap-2 text-sm"><span class="text-[#39d353]">&#x2713;</span> Gráfico <strong>' + type + '</strong> aberto em nova aba.</div>', true);
-    } catch(e) { removeLoading(); appendMessage('error', 'Erro: ' + e.message); }
+    postToNewTab('/api/chart/open', {
+        json_data: JSON.stringify(lastQueryData),
+        chart_type: type,
+    });
+    appendMessage('assistant',
+        '<div class="flex items-center gap-2 text-sm"><span class="text-[#39d353]">&#x2713;</span> Gráfico <strong>' + type + '</strong> aberto em nova aba.</div>', true);
 }
 
 // --- User Export/Import ---
