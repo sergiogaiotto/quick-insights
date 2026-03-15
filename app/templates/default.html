@@ -71,7 +71,7 @@
                 <span class="text-fg-bright">QUICK</span><span class="text-fg-accent">INSIGHTS</span>
             </h1>
             <span class="hidden sm:flex items-center gap-1.5 text-[10px] text-fg-muted border-l border-fg-border pl-3 uppercase tracking-widest">
-                <span class="w-1.5 h-1.5 rounded-full bg-fg-green"></span> on-line
+                <span class="w-1.5 h-1.5 rounded-full bg-fg-green"></span> Deep Agent
             </span>
         </div>
         <nav class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium">
@@ -551,7 +551,7 @@ function appendMessage(role, content, isHtml = false) {
     if (chat.querySelector('.text-center')) chat.innerHTML = '';
     const div = document.createElement('div'); div.className = 'fade-in';
     if (role === 'user') { div.innerHTML = `<div class="flex justify-end"><div class="bg-fg-accent/10 border border-fg-accent/20 rounded-xl px-4 py-2.5 max-w-[80%] text-sm">${escapeHtml(content)}</div></div>`; }
-    else if (role === 'loading') { div.id = 'loadingMsg'; div.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Quick-Insights analisando...</div>`; }
+    else if (role === 'loading') { div.id = 'loadingMsg'; div.innerHTML = `<div class="flex items-center gap-2.5 text-xs text-fg-muted py-2"><span class="flex gap-1"><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.3s"></span><span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-fg-accent" style="animation-delay:0.6s"></span></span> Deep Agent analisando...</div>`; }
     else if (role === 'error') { div.innerHTML = `<div class="bg-red-900/15 border border-red-800/40 rounded-xl px-4 py-2.5 text-sm text-red-400">${escapeHtml(content)}</div>`; }
     else { div.innerHTML = `<div class="bg-fg-700/50 border border-fg-border rounded-xl px-4 py-3 text-sm max-w-full overflow-hidden">${isHtml ? content : escapeHtml(content)}</div>`; }
     chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
@@ -577,32 +577,36 @@ function runSuggestion(text) { document.getElementById('queryInput').value = tex
 // ============================
 // Explore / Analytics / Excel / Email
 // ============================
-async function openExplore() {
-    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) { alert('Sem dados.'); return; }
-    appendMessage('loading', '');
-    try {
-        const res = await fetch('/api/explore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lastQueryData) });
-        removeLoading();
-        if (!res.ok) { appendMessage('error', 'Erro'); return; }
-        const html = await res.text();
-        const w = window.open('', '_blank', 'width=1400,height=850');
-        if (w) { w.document.write(html); w.document.close(); }
-        appendMessage('assistant', '<div class="text-sm text-purple-400">Explorador aberto — PyGWalker.</div>', true);
-    } catch(e) { removeLoading(); appendMessage('error', 'Erro: ' + e.message); }
+
+// Helper: POST form data to a URL in a new tab (bypasses parent CSP)
+function postToNewTab(url, fields) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    form.target = '_blank';
+    form.style.display = 'none';
+    for (const [name, value] of Object.entries(fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
 }
 
-async function openAnalytics() {
+function openExplore() {
     if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) { alert('Sem dados.'); return; }
-    appendMessage('loading', '');
-    try {
-        const res = await fetch('/api/analytics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lastQueryData) });
-        removeLoading();
-        if (!res.ok) { appendMessage('error', 'Erro'); return; }
-        const html = await res.text();
-        const w = window.open('', '_blank', 'width=1500,height=900');
-        if (w) { w.document.write(html); w.document.close(); }
-        appendMessage('assistant', '<div class="text-sm text-amber-400">Análise Avançada aberta — scikit-learn.</div>', true);
-    } catch(e) { removeLoading(); appendMessage('error', 'Erro: ' + e.message); }
+    postToNewTab('/api/explore/open', { json_data: JSON.stringify(lastQueryData) });
+    appendMessage('assistant', '<div class="text-sm text-purple-400">Explorador aberto — PyGWalker.</div>', true);
+}
+
+function openAnalytics() {
+    if (!lastQueryData || !lastQueryData.rows || !lastQueryData.rows.length) { alert('Sem dados.'); return; }
+    postToNewTab('/api/analytics/open', { json_data: JSON.stringify(lastQueryData) });
+    appendMessage('assistant', '<div class="text-sm text-amber-400">Análise Avançada aberta — scikit-learn.</div>', true);
 }
 
 async function exportExcel() {
