@@ -206,6 +206,12 @@ def _render_interactive_chart_html(data: dict, initial_config: dict | None = Non
                 <option value="100">100</option><option value="0">Todos</option>
             </select>
         </div>
+        <div class="qi-g"><span class="qi-lbl">Ordem</span>
+            <select id="ctrlSort" class="qi-sel" onchange="rebuild()">
+                <option value="asc" selected>Ascendente</option>
+                <option value="desc">Descendente</option>
+            </select>
+        </div>
     </div>
     <div class="qi-wrap"><div class="qi-inner"><canvas id="mainChart"></canvas></div></div>
 
@@ -222,9 +228,14 @@ Chart.defaults.font.family="'Space Grotesk',sans-serif";
 
 let chart=null;
 
-function agg(xF,yF,fn,lim){{
+function agg(xF,yF,fn,lim,sort){{
     if(fn==='none'){{
         let r=RAW.map(d=>({{x:String(d[xF]??''),y:Number(d[yF])||0}}));
+        // Sort by label (X)
+        r.sort((a,b)=>{{
+            const cmp=a.x.localeCompare(b.x,undefined,{{numeric:true,sensitivity:'base'}});
+            return sort==='desc'?-cmp:cmp;
+        }});
         if(lim>0)r=r.slice(0,lim);
         return{{l:r.map(d=>d.x),v:r.map(d=>d.y)}};
     }}
@@ -242,7 +253,7 @@ function agg(xF,yF,fn,lim){{
         else if(fn==='count')val=vs.length;
         return{{l:k,v:val}};
     }});
-    e.sort((a,b)=>b.v-a.v);
+    e.sort((a,b)=>sort==='desc'?b.v-a.v:a.v-b.v);
     if(lim>0)e=e.slice(0,lim);
     return{{l:e.map(d=>d.l),v:e.map(d=>d.v)}};
 }}
@@ -253,7 +264,8 @@ function rebuild(){{
     const yF=document.getElementById('ctrlY').value;
     const ag=document.getElementById('ctrlAgg').value;
     const lm=parseInt(document.getElementById('ctrlLimit').value)||0;
-    const d=agg(xF,yF,ag,lm);
+    const sort=document.getElementById('ctrlSort').value;
+    const d=agg(xF,yF,ag,lm,sort);
     if(chart)chart.destroy();
 
     const mp={{bar:'bar',line:'line',scatter:'scatter',area:'line',pie:'pie',doughnut:'doughnut',radar:'radar',polarArea:'polarArea'}};
