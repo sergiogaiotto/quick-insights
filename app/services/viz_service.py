@@ -95,15 +95,15 @@ def get_chart_options_for_data(data: dict) -> dict:
     non_numeric = [c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
     n_rows = len(df)
     options = [
-        {"type": "auto", "label": "Auto (LLM)", "icon": "\u2728", "suitable": True},
-        {"type": "bar", "label": "Barras", "icon": "\uD83D\uDCCA", "suitable": True},
-        {"type": "line", "label": "Linhas", "icon": "\uD83D\uDCC8", "suitable": len(numeric) > 0 and n_rows > 2},
-        {"type": "scatter", "label": "Dispersão", "icon": "\u26A1", "suitable": len(numeric) >= 2},
-        {"type": "area", "label": "Área", "icon": "\uD83C\uDFD4\uFE0F", "suitable": len(numeric) > 0 and n_rows > 2},
-        {"type": "pie", "label": "Pizza", "icon": "\uD83E\uDD67", "suitable": len(numeric) > 0 and n_rows <= 20},
-        {"type": "doughnut", "label": "Rosca", "icon": "\uD83C\uDF69", "suitable": len(numeric) > 0 and n_rows <= 20},
-        {"type": "radar", "label": "Radar", "icon": "\uD83D\uDD78\uFE0F", "suitable": len(numeric) >= 3 and n_rows <= 15},
-        {"type": "polarArea", "label": "Polar", "icon": "\uD83C\uDFAF", "suitable": len(numeric) > 0 and n_rows <= 12},
+        {"type": "auto", "label": "Auto (LLM)", "icon": "*", "suitable": True},
+        {"type": "bar", "label": "Barras", "icon": "||", "suitable": True},
+        {"type": "line", "label": "Linhas", "icon": "/\\", "suitable": len(numeric) > 0 and n_rows > 2},
+        {"type": "scatter", "label": "Dispersao", "icon": ".:", "suitable": len(numeric) >= 2},
+        {"type": "area", "label": "Area", "icon": "~", "suitable": len(numeric) > 0 and n_rows > 2},
+        {"type": "pie", "label": "Pizza", "icon": "O", "suitable": len(numeric) > 0 and n_rows <= 20},
+        {"type": "doughnut", "label": "Rosca", "icon": "()", "suitable": len(numeric) > 0 and n_rows <= 20},
+        {"type": "radar", "label": "Radar", "icon": "<>", "suitable": len(numeric) >= 3 and n_rows <= 15},
+        {"type": "polarArea", "label": "Polar", "icon": "+", "suitable": len(numeric) > 0 and n_rows <= 12},
     ]
     return {"options": options, "numeric_cols": numeric, "categorical_cols": non_numeric, "row_count": n_rows}
 
@@ -253,7 +253,10 @@ function agg(xF,yF,fn,lim,sort){{
         else if(fn==='count')val=vs.length;
         return{{l:k,v:val}};
     }});
-    e.sort((a,b)=>sort==='desc'?b.v-a.v:a.v-b.v);
+    e.sort((a,b)=>{{
+        const cmp=a.l.localeCompare(b.l,undefined,{{numeric:true,sensitivity:'base'}});
+        return sort==='desc'?-cmp:cmp;
+    }});
     if(lim>0)e=e.slice(0,lim);
     return{{l:e.map(d=>d.l),v:e.map(d=>d.v)}};
 }}
