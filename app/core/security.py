@@ -83,6 +83,22 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# User role helpers
+# ---------------------------------------------------------------------------
+
+ADMIN_ROLES = {"root", "superuser", "admin"}
+ALL_ROLES = {"root", "superuser", "admin", "user"}
+
+
+def is_admin(user: dict) -> bool:
+    return user.get("user_type") in ADMIN_ROLES
+
+
+def is_root(user: dict) -> bool:
+    return user.get("user_type") == "root"
+
+
+# ---------------------------------------------------------------------------
 # User Management
 # ---------------------------------------------------------------------------
 
@@ -98,7 +114,8 @@ def get_user_count() -> int:
 
 
 def create_user(login: str, password: str, user_type: str = "user",
-                display_name: str = "", profile_description: str = "") -> dict:
+                display_name: str = "", profile_description: str = "",
+                datamart_ids: list[int] | None = None) -> dict:
     conn = get_sync_connection()
     try:
         conn.execute(
@@ -108,28 +125,48 @@ def create_user(login: str, password: str, user_type: str = "user",
         )
         conn.commit()
         user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        # Assign datamarts
+        if datamart_ids:
+            for dm_id in datamart_ids:
+                conn.execute(
+                    "INSERT OR IGNORE INTO user_datamarts (user_id, datamart_id) VALUES (?, ?)",
+                    (user_id, dm_id),
+                )
+            conn.commit()
+
         return {"id": user_id, "login": login, "user_type": user_type, "display_name": display_name}
     finally:
         conn.close()
 
 
 def authenticate_user(login: str, password: str) -> dict | None:
-    """Authenticate and return user dict, or None. Auto-creates admin if DB is empty."""
+    """Authenticate and return user dict, or None. Auto-creates root if DB is empty."""
     conn = get_sync_connection()
     try:
-        # Check if any users exist
         count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         if count == 0:
-            # First login ever → create admin
+            # First login ever → create root user
             pw_hash = hash_password(password)
             conn.execute(
                 """INSERT INTO users (login, password_hash, user_type, display_name, profile_description)
-                   VALUES (?, ?, 'admin', 'Super Usuário', 'Conta administrador criada automaticamente no primeiro acesso.')""",
+                   VALUES (?, ?, 'root', 'Root', 'Conta root criada automaticamente no primeiro acesso.')""",
                 (login, pw_hash),
             )
             conn.commit()
             row = conn.execute("SELECT * FROM users WHERE login = ? COLLATE NOCASE", (login,)).fetchone()
-            return dict(row) if row else None
+            if row:
+                user = dict(row)
+                # Assign all datamarts to root
+                dm_cursor = conn.execute("SELECT id FROM datamarts")
+                for dm_row in dm_cursor.fetchall():
+                    conn.execute(
+                        "INSERT OR IGNORE INTO user_datamarts (user_id, datamart_id) VALUES (?, ?)",
+                        (user["id"], dm_row[0]),
+                    )
+                conn.commit()
+                return user
+            return None
 
         # Normal login
         row = conn.execute("SELECT * FROM users WHERE login = ? COLLATE NOCASE AND is_active = 1", (login,)).fetchone()
@@ -169,7 +206,16 @@ def list_users() -> list[dict]:
             "SELECT id, login, user_type, display_name, profile_description, is_active, created_at, updated_at "
             "FROM users ORDER BY created_at"
         )
-        return [dict(r) for r in cursor.fetchall()]
+        users = []
+        for r in cursor.fetchall():
+            u = dict(r)
+            # Attach datamart ids
+            dm_cursor = conn.execute(
+                "SELECT datamart_id FROM user_datamarts WHERE user_id = ?", (u["id"],)
+            )
+            u["datamart_ids"] = [row[0] for row in dm_cursor.fetchall()]
+            users.append(u)
+        return users
     finally:
         conn.close()
 
@@ -177,13 +223,28 @@ def list_users() -> list[dict]:
 def update_user(user_id: int, **kwargs) -> bool:
     allowed = {"login", "user_type", "display_name", "profile_description", "is_active"}
     fields = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
-    if not fields:
+
+    # Handle datamart_ids separately
+    datamart_ids = kwargs.get("datamart_ids")
+
+    if not fields and datamart_ids is None:
         return False
-    fields["updated_at"] = datetime.utcnow().isoformat()
-    set_clause = ", ".join(f"{k} = ?" for k in fields)
+
     conn = get_sync_connection()
     try:
-        conn.execute(f"UPDATE users SET {set_clause} WHERE id = ?", (*fields.values(), user_id))
+        if fields:
+            fields["updated_at"] = datetime.utcnow().isoformat()
+            set_clause = ", ".join(f"{k} = ?" for k in fields)
+            conn.execute(f"UPDATE users SET {set_clause} WHERE id = ?", (*fields.values(), user_id))
+
+        if datamart_ids is not None:
+            conn.execute("DELETE FROM user_datamarts WHERE user_id = ?", (user_id,))
+            for dm_id in datamart_ids:
+                conn.execute(
+                    "INSERT OR IGNORE INTO user_datamarts (user_id, datamart_id) VALUES (?, ?)",
+                    (user_id, dm_id),
+                )
+
         conn.commit()
         return True
     finally:
@@ -207,6 +268,7 @@ def delete_user(user_id: int) -> bool:
     conn = get_sync_connection()
     try:
         conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM user_datamarts WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
         return True
@@ -226,7 +288,6 @@ def create_session(user_id: int) -> str:
     expires = datetime.utcnow() + timedelta(hours=SESSION_DURATION_HOURS)
     conn = get_sync_connection()
     try:
-        # Clean expired sessions
         conn.execute("DELETE FROM sessions WHERE expires_at < ?", (datetime.utcnow().isoformat(),))
         conn.execute(
             "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)",
