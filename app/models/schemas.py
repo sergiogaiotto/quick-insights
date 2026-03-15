@@ -7,6 +7,7 @@ class QueryRequest(BaseModel):
     analysis_type_id: Optional[int] = Field(None, description="ID do tipo de análise")
     conversation_context: Optional[str] = Field(None, description="Contexto da conversa anterior")
     result_limit: Optional[int] = Field(20, ge=0, le=1000, description="Limite de registros retornados (0 = sem limite)")
+    datamart_ids: Optional[list[int]] = Field(None, description="IDs dos DataMarts para filtrar tabelas")
 
 
 class QueryResponse(BaseModel):
@@ -74,17 +75,19 @@ class LoginRequest(BaseModel):
 class UserCreate(BaseModel):
     login: str = Field(..., min_length=2)
     password: str = Field(..., min_length=8)
-    user_type: str = Field("user", pattern="^(admin|user)$")
+    user_type: str = Field("user", pattern="^(root|admin|user)$")
     display_name: str = ""
     profile_description: str = ""
+    datamart_ids: list[int] = Field(default_factory=list, description="IDs dos DataMarts atribuídos")
 
 
 class UserUpdate(BaseModel):
     login: Optional[str] = None
-    user_type: Optional[str] = Field(None, pattern="^(superuser|admin|user)$")
+    user_type: Optional[str] = Field(None, pattern="^(root|superuser|admin|user)$")
     display_name: Optional[str] = None
     profile_description: Optional[str] = None
     is_active: Optional[int] = None
+    datamart_ids: Optional[list[int]] = None
 
 
 class PasswordChange(BaseModel):
@@ -104,3 +107,26 @@ class SkillUpdate(BaseModel):
     description: Optional[str] = None
     content: Optional[str] = None
     is_active: Optional[int] = None
+
+
+# --- DataMarts ---
+
+class DataMartCreate(BaseModel):
+    name: str = Field(..., min_length=2)
+    description: str = ""
+
+
+class DataMartUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class DataMartAssignTable(BaseModel):
+    table_name: str = Field(..., min_length=1)
+
+
+# --- Chart submenu ---
+
+class ChartRequest(BaseModel):
+    chart_type: str = Field(..., pattern="^(auto|bar|line|scatter|area|pie|doughnut|radar|polarArea)$")
+    query_data: dict = Field(..., description="Dados da consulta {columns, rows}")
